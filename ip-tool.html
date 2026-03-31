@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>个人 IP 梳理工具</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a18;
+    --ink-2: #4a4a45;
+    --ink-3: #8a8a82;
+    --paper: #f7f5f0;
+    --paper-2: #eeece6;
+    --accent: #c4621a;
+    --accent-light: #f5e8dc;
+    --blue: #3d5afe;
+    --blue-light: #e8f0fe;
+    --border: rgba(26,26,24,0.12);
+    --serif: 'Noto Serif SC', serif;
+    --sans: 'Noto Sans SC', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--sans); font-weight: 300; min-height: 100vh; }
+
+  .header { padding: 3rem 2rem 2rem; max-width: 640px; margin: 0 auto; border-bottom: 1px solid var(--border); }
+  .header-eyebrow { font-size: 11px; letter-spacing: 0.15em; color: var(--accent); margin-bottom: 14px; font-weight: 400; text-transform: uppercase; }
+  .header h1 { font-family: var(--serif); font-size: 26px; font-weight: 600; line-height: 1.5; margin-bottom: 10px; }
+  .header p { font-size: 14px; color: var(--ink-2); line-height: 1.8; }
+
+  .progress-bar { max-width: 640px; margin: 0 auto; padding: 1.5rem 2rem 0; }
+  .progress-track { height: 2px; background: var(--paper-2); border-radius: 2px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.5s ease; }
+  .progress-label { font-size: 12px; color: var(--ink-3); margin-top: 8px; display: flex; justify-content: space-between; }
+
+  .layer-badge { display: inline-block; font-size: 11px; font-weight: 500; letter-spacing: 0.06em; padding: 3px 10px; border-radius: 20px; margin-bottom: 12px; }
+  .layer-1 { background: var(--blue-light); color: var(--blue); }
+  .layer-2 { background: var(--accent-light); color: var(--accent); }
+
+  .main { max-width: 640px; margin: 0 auto; padding: 2rem; }
+
+  .q-card { display: none; animation: fadeUp 0.4s ease; }
+  .q-card.active { display: block; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+  .q-num { font-size: 11px; letter-spacing: 0.12em; color: var(--ink-3); margin-bottom: 8px; font-weight: 400; }
+  .q-title { font-family: var(--serif); font-size: 20px; font-weight: 600; line-height: 1.5; margin-bottom: 8px; }
+  .q-hint { font-size: 13px; color: var(--ink-3); margin-bottom: 16px; line-height: 1.8; }
+  .q-hint strong { color: var(--ink-2); font-weight: 500; }
+
+  .example-box { background: white; border-left: 3px solid var(--accent); border-radius: 0 6px 6px 0; padding: 10px 14px; margin-bottom: 14px; font-size: 13px; color: var(--ink-2); line-height: 1.7; }
+  .example-box .ex-label { font-size: 11px; color: var(--accent); font-weight: 500; margin-bottom: 4px; letter-spacing: 0.06em; }
+
+  textarea, input[type="text"] {
+    width: 100%; background: white; border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px 14px; font-family: var(--sans); font-size: 14px; font-weight: 300;
+    color: var(--ink); outline: none; transition: border-color 0.2s; resize: none; line-height: 1.7;
+  }
+  textarea:focus, input[type="text"]:focus { border-color: var(--accent); }
+  textarea { min-height: 90px; }
+
+  .word-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .word-tag { background: white; border: 1px solid var(--border); border-radius: 20px; padding: 7px 16px; font-size: 13px; font-weight: 300; color: var(--ink); cursor: pointer; transition: all 0.18s; user-select: none; }
+  .word-tag:hover { border-color: var(--accent); background: var(--accent-light); }
+  .word-tag.selected { border-color: var(--accent); background: var(--accent); color: white; }
+  .word-tag-hint { font-size: 12px; color: var(--ink-3); margin-top: 6px; }
+
+  .choices { display: flex; flex-direction: column; gap: 8px; }
+  .choice-btn { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; font-family: var(--sans); font-size: 14px; font-weight: 300; color: var(--ink); cursor: pointer; text-align: left; transition: all 0.18s; display: flex; align-items: center; gap: 10px; }
+  .choice-btn:hover { border-color: var(--accent); background: var(--accent-light); }
+  .choice-btn.selected { border-color: var(--accent); background: var(--accent-light); font-weight: 500; }
+  .choice-dot { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--border); flex-shrink: 0; transition: all 0.18s; display: flex; align-items: center; justify-content: center; }
+  .choice-btn.selected .choice-dot { border-color: var(--accent); background: var(--accent); }
+  .choice-btn.selected .choice-dot::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: white; }
+
+  .semi-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 10px; }
+  .semi-label { font-size: 14px; color: var(--ink-2); padding-top: 13px; white-space: nowrap; flex-shrink: 0; min-width: 44px; }
+
+  .nav { margin-top: 28px; display: flex; justify-content: space-between; align-items: center; }
+  .btn-back { font-size: 13px; color: var(--ink-3); background: none; border: none; cursor: pointer; font-family: var(--sans); padding: 8px 0; }
+  .btn-back:hover { color: var(--ink); }
+  .btn-next { background: var(--accent); color: white; border: none; border-radius: 8px; padding: 13px 28px; font-family: var(--sans); font-size: 14px; font-weight: 500; cursor: pointer; transition: opacity 0.2s; }
+  .btn-next:hover { opacity: 0.88; }
+  .btn-next:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* 分层过渡 */
+  .layer-transition { display: none; text-align: center; padding: 2rem 0; animation: fadeUp 0.5s ease; }
+  .layer-transition.active { display: block; }
+  .lt-icon { font-size: 28px; margin-bottom: 14px; }
+  .lt-title { font-family: var(--serif); font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+  .lt-sub { font-size: 14px; color: var(--ink-2); line-height: 1.8; margin-bottom: 24px; }
+  .lt-summary { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; text-align: left; margin-bottom: 20px; }
+  .lt-label { font-size: 11px; color: var(--blue); font-weight: 500; margin-bottom: 8px; letter-spacing: 0.06em; }
+  .lt-row { font-size: 13px; color: var(--ink); line-height: 1.8; margin-bottom: 4px; }
+  .lt-row span { color: var(--ink-3); }
+
+  #loading-screen { display: none; text-align: center; padding: 4rem 2rem; }
+  .spinner { width: 32px; height: 32px; border: 2px solid var(--paper-2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-family: var(--serif); font-size: 17px; color: var(--ink-2); margin-bottom: 6px; }
+  .loading-sub { font-size: 13px; color: var(--ink-3); }
+
+  #result-screen { display: none; }
+  .result-header { padding-bottom: 20px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+  .result-eyebrow { font-size: 11px; letter-spacing: 0.15em; color: var(--accent); margin-bottom: 8px; font-weight: 400; text-transform: uppercase; }
+  .result-title { font-family: var(--serif); font-size: 22px; font-weight: 600; margin-bottom: 6px; }
+  .result-sub { font-size: 13px; color: var(--ink-3); }
+
+  .ip-card { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 12px; }
+  .ip-card-label { font-size: 11px; letter-spacing: 0.1em; color: var(--accent); margin-bottom: 10px; font-weight: 500; text-transform: uppercase; }
+  .ip-card-content { font-size: 15px; line-height: 1.85; color: var(--ink); white-space: pre-wrap; }
+
+  .tags-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .result-tag { font-size: 12px; padding: 4px 12px; border-radius: 20px; background: var(--accent-light); color: var(--accent); }
+
+  .copy-btn { width: 100%; margin-top: 10px; background: none; border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-family: var(--sans); font-size: 13px; color: var(--ink-2); cursor: pointer; transition: all 0.2s; }
+  .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .compliance-box { background: var(--accent-light); border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; font-size: 13px; color: var(--ink-2); line-height: 1.8; }
+
+  .restart-btn { width: 100%; margin-top: 12px; background: none; border: 1px solid var(--border); border-radius: 8px; padding: 13px; font-family: var(--sans); font-size: 14px; color: var(--ink-3); cursor: pointer; transition: all 0.2s; }
+  .restart-btn:hover { color: var(--ink); border-color: var(--ink-2); }
+
+  @media (max-width: 480px) {
+    .header { padding: 2rem 1.25rem 1.5rem; }
+    .main { padding: 1.5rem 1.25rem; }
+    .progress-bar { padding: 1.25rem 1.25rem 0; }
+    .header h1 { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-eyebrow">安利 · 个人 IP 梳理</div>
+  <h1>找到真实的你<br>才是最有影响力的 IP</h1>
+  <p>分两步，9 个问题。<br>先看清你是谁，再找到你能给别人什么。</p>
+</div>
+
+<div class="progress-bar">
+  <div class="progress-track"><div class="progress-fill" id="progress" style="width:0%"></div></div>
+  <div class="progress-label"><span id="q-counter">第 1 题，共 9 题</span><span id="q-pct">0%</span></div>
+</div>
+
+<div class="main">
+
+  <!-- Q1 -->
+  <div class="q-card active" id="q1">
+    <div class="layer-badge layer-1">第一步 · 先看清你是谁</div>
+    <div class="q-num">01 / 09</div>
+    <div class="q-title">你现在是什么身份？</div>
+    <div class="q-hint">用自己的话写，可以是多个身份叠加。<br><strong>两个维度参考：</strong><br>
+      人群标签：宝妈 · 职场人 · 银发族 · 个体户 · 退休族 · 新手爸妈<br>
+      职业/角色：安利顾问 · 营养师 · 健身教练 · 教师 · 企业主 · 自由职业
+    </div>
+    <div class="example-box">
+      <div class="ex-label">示例</div>
+      「两个孩子的宝妈，同时也是安利顾问，做了6年健康行业」<br>
+      「退休护士，现在做健康副业，喜欢研究营养搭配」
+    </div>
+    <textarea id="a1" placeholder="我是……" oninput="checkOpen(1,'identity')"></textarea>
+    <div class="nav"><span></span><button class="btn-next" id="next1" disabled onclick="nextQ(1)">下一题 →</button></div>
+  </div>
+
+  <!-- Q2 -->
+  <div class="q-card" id="q2">
+    <div class="layer-badge layer-1">第一步 · 先看清你是谁</div>
+    <div class="q-num">02 / 09</div>
+    <div class="q-title">你现在处于哪个人生阶段？</div>
+    <div class="q-hint">可以多选。同阶段的人最容易产生共鸣，选出最像你现在状态的。</div>
+    <div class="choices multi" data-key="stage">
+      <button class="choice-btn" data-val="刚步入社会，摸索方向中的年轻人"><span class="choice-dot"></span>刚步入社会，摸索方向中的年轻人</button>
+      <button class="choice-btn" data-val="工作稳定但压力大，身体开始有变化的职场人"><span class="choice-dot"></span>工作稳定但压力大，身体开始有变化的职场人</button>
+      <button class="choice-btn" data-val="刚成为爸妈，自己的状态被搁置"><span class="choice-dot"></span>刚成为爸妈，自己的状态被搁置</button>
+      <button class="choice-btn" data-val="孩子大了，重新有时间关注自己"><span class="choice-dot"></span>孩子大了，重新有时间关注自己</button>
+      <button class="choice-btn" data-val="40岁前后，开始认真思考健康和第二曲线"><span class="choice-dot"></span>40岁前后，开始认真思考健康和第二曲线</button>
+      <button class="choice-btn" data-val="正在经历身体变化期，激素、睡眠、情绪都在波动"><span class="choice-dot"></span>正在经历身体变化期，激素、睡眠、情绪都在波动</button>
+      <button class="choice-btn" data-val="事业稳定，想在健康和副业上有新突破"><span class="choice-dot"></span>事业稳定，想在健康和副业上有新突破</button>
+      <button class="choice-btn" data-val="50岁以上，活力不减，想活得更有质量"><span class="choice-dot"></span>50岁以上，活力不减，想活得更有质量</button>
+      <button class="choice-btn" data-val="退休或即将退休，开启人生新篇章"><span class="choice-dot"></span>退休或即将退休，开启人生新篇章</button>
+      <button class="choice-btn" data-val="正在创业或转型，压力与机遇并存"><span class="choice-dot"></span>正在创业或转型，压力与机遇并存</button>
+      <button class="choice-btn" data-val="长期高压透支，想找回健康状态"><span class="choice-dot"></span>长期高压透支，想找回健康状态</button>
+    </div>
+    <div class="nav">
+      <button class="btn-back" onclick="prevQ(2)">← 上一题</button>
+      <button class="btn-next" id="next2" disabled onclick="nextQ(2)">下一题 →</button>
+    </div>
+  </div>
+
+  <!-- Q3 词标签 -->
+  <div class="q-card" id="q3">
+    <div class="layer-badge layer-1">第一步 · 先看清你是谁</div>
+    <div class="q-num">03 / 09</div>
+    <div class="q-title">用几个词形容你自己</div>
+    <div class="q-hint">点击选择，也可以在下方补充自己的词。不用追求「好听」，真实最重要。</div>
+    <div class="word-tags" id="word-tags-q3">
+      <span class="word-tag" data-val="务实">务实</span>
+      <span class="word-tag" data-val="温柔">温柔</span>
+      <span class="word-tag" data-val="直接">直接</span>
+      <span class="word-tag" data-val="幽默">幽默</span>
+      <span class="word-tag" data-val="细心">细心</span>
+      <span class="word-tag" data-val="爱研究">爱研究</span>
+      <span class="word-tag" data-val="有行动力">有行动力</span>
+      <span class="word-tag" data-val="爱分享">爱分享</span>
+      <span class="word-tag" data-val="有耐心">有耐心</span>
+      <span class="word-tag" data-val="接地气">接地气</span>
+      <span class="word-tag" data-val="理性">理性</span>
+      <span class="word-tag" data-val="感性">感性</span>
+      <span class="word-tag" data-val="自律">自律</span>
+      <span class="word-tag" data-val="随和">随和</span>
+      <span class="word-tag" data-val="有主见">有主见</span>
+      <span class="word-tag" data-val="爱学习">爱学习</span>
+    </div>
+    <input type="text" id="a3extra" placeholder="还有其他词？在这里补充（选填）" style="margin-top:8px;" oninput="updateQ3()">
+    <div class="word-tag-hint" id="q3-hint">还没选，点上面的词选择</div>
+    <div class="nav">
+      <button class="btn-back" onclick="prevQ(3)">← 上一题</button>
+      <button class="btn-next" id="next3" disabled onclick="nextQ(3)">下一题 →</button>
+    </div>
+  </div>
+
+  <!-- Q4 -->
+  <div class="q-card" id="q4">
+    <div class="layer-badge layer-1">第一步 · 先看清你是谁</div>
+    <div class="q-num">04 / 09</div>
+    <div class="q-title">身边的人通常觉得你是个什么样的人？</div>
+    <div class="q-hint">用他人的视角来看自己，往往更客观。朋友、家人、客户对你说过的评价，哪句让你印象最深？</div>
+    <div class="example-box">
+      <div class="ex-label">示例</div>
+      「朋友说我说话很实在，不会绕弯子」<br>
+      「客户说跟我聊完很安心，不像是在卖东西」<br>
+      「家人说我特别爱研究，买什么都要查清楚」
+    </div>
+    <textarea id="a4" placeholder="他们通常说我……" oninput="checkOpen(4,'others_view')"></textarea>
+    <div class="nav">
+      <button class="btn-back" onclick="prevQ(4)">← 上一题</button>
+      <button class="btn-next" id="next4" disabled onclick="showTransition()">下一题 →</button>
+    </div>
+  </div>
+
+  <!-- 过渡屏 -->
+  <div class="layer-transition" id="layer-mid">
+    <div class="lt-icon">✦</div>
+    <div class="lt-title">第一步完成</div>
+    <div class="lt-sub">你已经勾勒出自己的轮廓。<br>接下来，我们来挖你能给别人什么。</div>
+    <div class="lt-summary" id="lt-summary-box"></div>
+    <button class="btn-next" style="width:100%;" onclick="startLayer2()">继续第二步 →</button>
+  </div>
+
+  <!-- Q5 半结构化转变 -->
+  <div class="q-card" id="q5">
+    <div class="layer-badge layer-2">第二步 · 你能给别人什么</div>
+    <div class="q-num">05 / 09</div>
+    <div class="q-title">你在健康或生活上经历过什么改变？</div>
+    <div class="q-hint">按照下面的引导一步步填。越具体越有力量，填一两句就够了。</div>
+    <div class="semi-row">
+      <span class="semi-label">以前</span>
+      <textarea id="a5a" placeholder="描述以前的状态……" style="min-height:70px;" oninput="checkQ5()"></textarea>
+    </div>
+    <div class="semi-row">
+      <span class="semi-label">后来</span>
+      <textarea id="a5b" placeholder="发生了什么改变……" style="min-height:70px;" oninput="checkQ5()"></textarea>
+    </div>
+    <div class="semi-row">
+      <span class="semi-label">现在</span>
+      <textarea id="a5c" placeholder="现在的状态是……（选填）" style="min-height:70px;" oninput="checkQ5()"></textarea>
+    </div>
+    <div class="nav">
+      <button class="btn-back" onclick="backToTransition()">← 上一题</button>
+      <button class="btn-next" id="next5" disabled onclick="nextQ(5)">下一题 →</button>
+    </div>
+  </div>
+
+  <!-- Q6 -->
+  <div class="q-card" id="q6">
+    <div class="layer-badge layer-2">第二步 · 你能给别人什么</div>
+    <div class="q-num">06 / 09</div>
+    <div class="q-title">你平时是怎么跟人讲健康这件事的？</div>
+    <div class="q-hint">就是你跟朋友聊天时最自然的那种说法。举一个你真实说过的例子。</div>
+    <div class="example-box">
+      <div class="ex-label">示例</div>
+      「我经常说，早餐不是不吃，是要吃对。我自己就是五分钟搞定，又快又扛饿」<br>
+      「我会说，皮肤好不好，70%是吃出来的，我自己就是这样调回来的」
+    </div>
+    <textarea id="a6" placeholder="我通常会这样跟人说……" oninput="checkOpen(6,'how_talk')"></textarea>
+    <div class="nav">
+      <button class="btn-back" onclick="prevQ(6)">← 上一题</button>
+      <button class="btn-next" id="next6" disabled onclick="nextQ(6)">下一题 →</button>
+    </div>
+  </div>
+
+  <!-- Q7 反向问 -->
+  <div class="q-card" id="q7">
+    <div class="layer-badge layer-2">第二步 · 你能给别人什么</div>
+    <div class="q-num">07 / 09</div>
+    <div class="q-title">你最不想被人觉得你是什么样的人？</div>
+    <div class="q-hint">选一个最介意的。反向问往往更能挖出真实的价值观边界。</div>
+    <div class="choices" data-key="not_want">
+      <button class="choice-btn" data-val="在卖东西的销售，只想推产品"><span class="choice-dot"></span>在卖东西的销售，只想推产品</button>
+      <button class="choice-btn" data-val="高高在上的专家，让人有距离感"><span class="choice-dot"></span>高高在上的专家，让人有距离感</button>
+      <button class="choice-btn" data-val="包装过度的网红，内容不真实"><span class="choice-dot"></span>包装过度的网红，内容不真实</button>
+      <button class="choice-btn" data-val="只讲正能量、从不面对真实困难的人"><span class="choice-dot"></span>只讲正能量、从不面对真实困难的人</button>
+      <button class="choice-btn" data-val="跟风发内容、没有自己观点的人"><span class="choice-dot"></span>跟风发内容、没有自己观点的人</button>
+    </div>
+    <div class="nav">
+      <button class="btn-back" onclick="prevQ(7)">← 上一题</button>
+      <button class="btn-next" id="next7" disabled onclick="nextQ(7)">下一题 →</button>
+    </div>
+  </div>
+
+  <!-- Q8 核心价值 -->
+  <div class="q-card" id="q8">
+    <div class="layer-badge layer-2">第二步 · 你能给别人什么</div>
+    <div class="q-num">08 / 09</div>
+    <div class="q-title">如果只能帮别人解决一件事，你最想解决哪个？</div>
+    <div class="q-hint">第一反应往往最准。这道题帮你锁定你的核心价值。</div>
+    <div class="choices" data-key="core_value">
+      <button class="choice-btn" data-val="帮她吃对、补对，身体真的变好"><span class="choice-dot"></span>帮她吃对、补对，身体真的变好</button>
+      <button class="choice-btn" data-val="帮她找回状态，皮肤好、精力好、自信回来"><span class="choice-dot"></span>帮她找回状态，皮肤好、精力好、自信回来</button>
+      <button class="choice-btn" data-val="帮她在照顾家人的同时也照顾好自己"><span class="choice-dot"></span>帮她在照顾家人的同时也照顾好自己</button>
+      <button class="choice-btn" data-val="帮她找到适合自己的副业，有收入有成就感"><span class="choice-dot"></span>帮她找到适合自己的副业，有收入有成就感</button>
+      <button class="choice-btn" data-val="帮她建立健康习惯，不靠意志力也能坚持"><span class="choice-dot"></span>帮她建立健康习惯，不靠意志力也能坚持</button>
+      <button class="choice-btn" data-val="帮她了解自己的身体，不再被各种信息牵着走"><span class="choice-dot"></span>帮她了解自己的身体，不再被各种信息牵着走</button>
+    </div>
+    <div class="nav">
+      <button class="btn-back" onclick="prevQ(8)">← 上一题</button>
+      <button class="btn-next" id="next8" disabled onclick="nextQ(8)">下一题 →</button>
+    </div>
+  </div>
+
+  <!-- Q9 署名 -->
+  <div class="q-card" id="q9">
+    <div class="layer-badge layer-2">第二步 · 你能给别人什么</div>
+    <div class="q-num">09 / 09</div>
+    <div class="q-title">最后，你叫什么？大概多少岁？</div>
+    <div class="q-hint">用于生成你的 IP 档案，可以用昵称。</div>
+    <div style="display:flex;gap:10px;margin-bottom:10px;">
+      <input type="text" id="a9name" placeholder="昵称（如：晓燕、营养师小丽）" style="flex:2;" oninput="checkQ9()">
+      <input type="text" id="a9age" placeholder="年龄（如：42岁）" style="flex:1;" oninput="checkQ9()">
+    </div>
+    <div class="nav">
+      <button class="btn-back" onclick="prevQ(9)">← 上一题</button>
+      <button class="btn-next" id="next9" disabled onclick="generate()">生成我的 IP 档案 ✦</button>
+    </div>
+  </div>
+
+  <!-- 加载 -->
+  <div id="loading-screen">
+    <div class="spinner"></div>
+    <div class="loading-text">正在为你梳理 IP 定位…</div>
+    <div class="loading-sub">基于你的真实回答生成，请稍候</div>
+  </div>
+
+  <!-- 结果 -->
+  <div id="result-screen">
+    <div class="result-header">
+      <div class="result-eyebrow">梳理完成</div>
+      <div class="result-title" id="result-name">你的 IP 档案</div>
+      <div class="result-sub">以下内容基于你的回答生成，可直接使用或参考调整</div>
+    </div>
+    <div class="ip-card">
+      <div class="ip-card-label">你是谁 · IP 核心定位</div>
+      <div class="ip-card-content" id="out-positioning"></div>
+    </div>
+    <div class="ip-card">
+      <div class="ip-card-label">视频号 / 朋友圈简介（可直接复制）</div>
+      <div class="ip-card-content" id="out-bio"></div>
+      <button class="copy-btn" onclick="copyText('out-bio',this)">复制简介文案</button>
+    </div>
+    <div class="ip-card">
+      <div class="ip-card-label">第一条视频号内容建议</div>
+      <div class="ip-card-content" id="out-first-video"></div>
+    </div>
+    <div class="ip-card">
+      <div class="ip-card-label">3 个内容切口话题</div>
+      <div class="ip-card-content" id="out-topics"></div>
+    </div>
+    <div class="ip-card">
+      <div class="ip-card-label">你的 IP 关键词</div>
+      <div class="tags-row" id="out-tags"></div>
+    </div>
+    <div class="compliance-box">
+      <strong style="color:var(--accent);font-weight:500;">视频号合规提醒</strong><br>
+      大健康内容请注意：避免因果关联表达（如「吃了就好了」）、极限词、疗效承诺。有专业资质请在简介中标注，这是你在大健康赛道的差异化优势。
+    </div>
+    <button class="restart-btn" onclick="restart()">重新梳理 →</button>
+  </div>
+
+</div>
+
+<script>
+const answers = {};
+const TOTAL = 9;
+let currentQ = 1;
+
+// 选择题
+document.querySelectorAll('.choices').forEach(group => {
+  const isMulti = group.classList.contains('multi');
+  group.querySelectorAll('.choice-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = group.dataset.key;
+      const card = group.closest('.q-card');
+      const n = card ? parseInt(card.id.replace('q','')) : null;
+      if (isMulti) {
+        btn.classList.toggle('selected');
+        const sel = [...group.querySelectorAll('.choice-btn.selected')].map(b => b.dataset.val);
+        answers[key] = sel.join('、');
+        if (n) document.getElementById('next'+n).disabled = sel.length === 0;
+      } else {
+        group.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        answers[key] = btn.dataset.val;
+        if (n) document.getElementById('next'+n).disabled = false;
+      }
+    });
+  });
+});
+
+// 词标签 Q3
+document.querySelectorAll('#word-tags-q3 .word-tag').forEach(t => {
+  t.addEventListener('click', () => { t.classList.toggle('selected'); updateQ3(); });
+});
+function updateQ3() {
+  const sel = [...document.querySelectorAll('#word-tags-q3 .word-tag.selected')].map(t => t.dataset.val);
+  const extra = document.getElementById('a3extra').value.trim();
+  answers['traits'] = [...sel, ...(extra ? [extra] : [])].join('、');
+  const hint = document.getElementById('q3-hint');
+  if (sel.length > 0) {
+    hint.textContent = `已选：${sel.join('、')}`;
+    document.getElementById('next3').disabled = false;
+  } else {
+    hint.textContent = extra ? `已填写：${extra}` : '还没选，点上面的词选择';
+    document.getElementById('next3').disabled = extra.length === 0;
+  }
+}
+
+// 开放题
+function checkOpen(n, key) {
+  const val = document.getElementById('a'+n).value.trim();
+  answers[key] = val;
+  document.getElementById('next'+n).disabled = val.length < 4;
+}
+
+// Q5 半结构化
+function checkQ5() {
+  const a = document.getElementById('a5a').value.trim();
+  const b = document.getElementById('a5b').value.trim();
+  const c = document.getElementById('a5c').value.trim();
+  answers['transformation'] = [
+    a ? `以前：${a}` : '',
+    b ? `后来：${b}` : '',
+    c ? `现在：${c}` : ''
+  ].filter(Boolean).join(' / ');
+  document.getElementById('next5').disabled = (a+b).length < 4;
+}
+
+// Q9
+function checkQ9() {
+  const name = document.getElementById('a9name').value.trim();
+  answers['name'] = name;
+  answers['age'] = document.getElementById('a9age').value.trim();
+  document.getElementById('next9').disabled = name.length < 1;
+}
+
+// 进度
+function updateProgress(n) {
+  const pct = Math.round(((n-1)/TOTAL)*100);
+  document.getElementById('progress').style.width = pct+'%';
+  document.getElementById('q-counter').textContent = `第 ${n} 题，共 ${TOTAL} 题`;
+  document.getElementById('q-pct').textContent = pct+'%';
+}
+
+// 导航
+function nextQ(n) {
+  document.getElementById('q'+n).classList.remove('active');
+  document.getElementById('q'+(n+1)).classList.add('active');
+  currentQ = n+1;
+  updateProgress(n+1);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function prevQ(n) {
+  if (n === 5) { backToTransition(); return; }
+  document.getElementById('q'+n).classList.remove('active');
+  if (n-1 === 4) {
+    showTransition(); return;
+  }
+  document.getElementById('q'+(n-1)).classList.add('active');
+  currentQ = n-1;
+  updateProgress(n-1);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// 过渡屏
+function showTransition() {
+  document.getElementById('q4').classList.remove('active');
+  document.getElementById('lt-summary-box').innerHTML = `
+    <div class="lt-label">你的第一层画像</div>
+    <div class="lt-row"><span>身份：</span>${answers.identity||'—'}</div>
+    <div class="lt-row"><span>阶段：</span>${answers.stage||'—'}</div>
+    <div class="lt-row"><span>特质：</span>${answers.traits||'—'}</div>
+    <div class="lt-row"><span>他人眼中的你：</span>${answers.others_view||'—'}</div>
+  `;
+  document.getElementById('layer-mid').classList.add('active');
+  updateProgress(5);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function startLayer2() {
+  document.getElementById('layer-mid').classList.remove('active');
+  document.getElementById('q5').classList.add('active');
+  currentQ = 5;
+  updateProgress(5);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function backToTransition() {
+  document.getElementById('q5').classList.remove('active');
+  document.getElementById('layer-mid').classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// 生成
+async function generate() {
+  document.getElementById('q9').classList.remove('active');
+  document.getElementById('loading-screen').style.display = 'block';
+  document.getElementById('progress').style.width = '100%';
+  document.getElementById('q-counter').textContent = '生成中…';
+  document.getElementById('q-pct').textContent = '100%';
+  window.scrollTo({top:0,behavior:'smooth'});
+
+  const prompt = `你是一位资深自媒体IP定位顾问，深度了解微信视频号大健康赛道，擅长帮助安利领导人找到真实、有个人痕迹的IP方向。安利主要产品线是纽崔莱（营养补充）和雅姿（护肤美妆），但IP的核心不是产品，而是这个真实的人。
+
+用户信息：
+【第一层：这个人是谁】
+- 身份：${answers.identity||'未填'}
+- 人生阶段：${answers.stage||'未填'}
+- 用几个词形容自己：${answers.traits||'未填'}
+- 他人眼中的TA：${answers.others_view||'未填'}
+
+【第二层：TA能给别人什么】
+- 经历的转变：${answers.transformation||'未填'}
+- 平时怎么跟人讲健康：${answers.how_talk||'未填'}
+- 最不想被认为是：${answers.not_want||'未填'}
+- 最想帮别人解决的问题：${answers.core_value||'未填'}
+- 姓名/昵称：${answers.name||'未填'}，年龄：${answers.age||'未填'}
+
+生成以下5个部分，JSON格式，不要任何markdown标记，直接输出纯JSON：
+
+{
+  "positioning": "IP核心定位，2-3句话。先说清楚TA是谁（结合身份+阶段+特质），再说内容方向和能帮到谁。语气像过来人，不像专家，不浮夸",
+  "bio": "视频号/朋友圈简介，150字以内，第一人称。结构：我是谁+我经历了什么+我在分享什么+欢迎来找我。要有真实个人痕迹，让人感觉在跟真实的人说话",
+  "firstVideo": "第一条视频号内容建议：①话题标题（人群+场景小切口）②前3秒开场白（口语化，制造共鸣）③核心内容2-3点（说人话）④结尾互动钩子",
+  "topics": "3个内容切口话题（选题关键词×人群标签的交叉）：\n话题1：标题 — 一句话说为什么适合TA\n话题2：标题 — 一句话说为什么适合TA\n话题3：标题 — 一句话说为什么适合TA",
+  "tags": ["标签1","标签2","标签3","标签4","标签5"]
+}
+
+要求：口语化中文，禁用：赋能、蜕变、绽放、逆袭、裂变、焕新。突出真实个人痕迹，不只写产品功效。话题标题符合视频号合规：无疗效承诺、无极限词、无医疗用语。`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1500,
+        messages: [{role:'user',content:prompt}]
+      })
+    });
+    const data = await res.json();
+    const text = data.content.map(i=>i.text||'').join('');
+    const result = JSON.parse(text.replace(/```json|```/g,'').trim());
+
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('result-screen').style.display = 'block';
+    document.getElementById('result-name').textContent = `${answers.name} 的 IP 档案`;
+    document.getElementById('out-positioning').textContent = result.positioning;
+    document.getElementById('out-bio').textContent = result.bio;
+    document.getElementById('out-first-video').textContent = result.firstVideo;
+    document.getElementById('out-topics').textContent = result.topics;
+
+    const tagsEl = document.getElementById('out-tags');
+    tagsEl.innerHTML = '';
+    result.tags.forEach(t => {
+      const s = document.createElement('span');
+      s.className = 'result-tag';
+      s.textContent = t;
+      tagsEl.appendChild(s);
+    });
+  } catch(e) {
+    document.getElementById('loading-screen').innerHTML = `
+      <div style="color:var(--accent);font-size:14px;margin-bottom:16px;">生成遇到问题，请稍后重试</div>
+      <button onclick="restart()" style="padding:10px 20px;border:1px solid #ccc;background:none;cursor:pointer;border-radius:8px;font-family:inherit;">重新开始</button>
+    `;
+  }
+}
+
+function copyText(id, btn) {
+  navigator.clipboard.writeText(document.getElementById(id).textContent).then(() => {
+    btn.textContent = '已复制 ✓';
+    setTimeout(()=>{btn.textContent='复制简介文案';},2000);
+  });
+}
+
+function restart() {
+  Object.keys(answers).forEach(k=>delete answers[k]);
+  document.querySelectorAll('.q-card').forEach(c=>c.classList.remove('active'));
+  document.querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('selected'));
+  document.querySelectorAll('.word-tag').forEach(t=>t.classList.remove('selected'));
+  document.querySelectorAll('.btn-next').forEach(b=>b.disabled=true);
+  ['a1','a4','a5a','a5b','a5c','a6','a3extra','a9name','a9age'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('q3-hint').textContent='还没选，点上面的词选择';
+  document.getElementById('result-screen').style.display='none';
+  document.getElementById('loading-screen').style.display='none';
+  document.getElementById('layer-mid').classList.remove('active');
+  document.getElementById('q1').classList.add('active');
+  currentQ=1;
+  updateProgress(1);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+updateProgress(1);
+</script>
+</body>
+</html>
