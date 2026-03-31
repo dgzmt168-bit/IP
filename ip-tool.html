@@ -384,6 +384,7 @@
       <strong style="color:var(--accent);font-weight:500;">视频号合规提醒</strong><br>
       大健康内容请注意：避免因果关联表达（如「吃了就好了」）、极限词、疗效承诺。有专业资质请在简介中标注，这是你在大健康赛道的差异化优势。
     </div>
+    <a href="daily.html" style="display:block;text-align:center;background:var(--accent);color:white;border-radius:8px;padding:14px;font-family:var(--sans);font-size:14px;font-weight:500;text-decoration:none;margin-bottom:10px;">开始今日内容创作 →</a>
     <button class="restart-btn" onclick="restart()">重新梳理 →</button>
   </div>
 
@@ -589,6 +590,10 @@ async function generate() {
       s.textContent = t;
       tagsEl.appendChild(s);
     });
+
+    try {
+      localStorage.setItem('ip_profile', JSON.stringify({ answers: {...answers}, result }));
+    } catch(e) {}
   } catch(e) {
     document.getElementById('loading-screen').innerHTML = `
       <div style="color:var(--accent);font-size:14px;margin-bottom:16px;">生成遇到问题，请稍后重试</div>
