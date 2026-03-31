@@ -530,33 +530,30 @@ async function generate() {
   document.getElementById('q-pct').textContent = '100%';
   window.scrollTo({top:0,behavior:'smooth'});
 
-  const prompt = `你是一位资深自媒体IP定位顾问，深度了解微信视频号大健康赛道，擅长帮助安利领导人找到真实、有个人痕迹的IP方向。安利主要产品线是纽崔莱（营养补充）和雅姿（护肤美妆），但IP的核心不是产品，而是这个真实的人。
+  const prompt = `你是一位资深自媒体IP定位顾问，深度了解微信视频号大健康赛道，擅长帮助安利领导人找到真实、有个人痕迹的IP方向。
 
 用户信息：
-【第一层：这个人是谁】
+- 姓名/昵称：${answers.name||'未填'}，年龄：${answers.age||'未填'}
 - 身份：${answers.identity||'未填'}
 - 人生阶段：${answers.stage||'未填'}
 - 用几个词形容自己：${answers.traits||'未填'}
 - 他人眼中的TA：${answers.others_view||'未填'}
-
-【第二层：TA能给别人什么】
 - 经历的转变：${answers.transformation||'未填'}
 - 平时怎么跟人讲健康：${answers.how_talk||'未填'}
 - 最不想被认为是：${answers.not_want||'未填'}
 - 最想帮别人解决的问题：${answers.core_value||'未填'}
-- 姓名/昵称：${answers.name||'未填'}，年龄：${answers.age||'未填'}
 
-生成以下5个部分，JSON格式，不要任何markdown标记，直接输出纯JSON：
+请生成以下5个部分，严格按JSON格式输出，不要任何markdown标记，不要代码块，直接输出纯JSON对象：
 
 {
-  "positioning": "IP核心定位，2-3句话。先说清楚TA是谁（结合身份+阶段+特质），再说内容方向和能帮到谁。语气像过来人，不像专家，不浮夸",
-  "bio": "视频号/朋友圈简介，150字以内，第一人称。结构：我是谁+我经历了什么+我在分享什么+欢迎来找我。要有真实个人痕迹，让人感觉在跟真实的人说话",
-  "firstVideo": "第一条视频号内容建议：①话题标题（人群+场景小切口）②前3秒开场白（口语化，制造共鸣）③核心内容2-3点（说人话）④结尾互动钩子",
-  "topics": "3个内容切口话题（选题关键词×人群标签的交叉）：\n话题1：标题 — 一句话说为什么适合TA\n话题2：标题 — 一句话说为什么适合TA\n话题3：标题 — 一句话说为什么适合TA",
+  "positioning": "IP核心定位，2-3句话。第一句说清TA是谁（身份+人群），第二句说TA走过什么路（用转变故事的核心，一句话概括），第三句说TA能帮别人走什么路。语气像过来人，不像专家，不浮夸。",
+  "bio": "视频号/朋友圈简介，字数控制在120字以内，第一人称口语化。结构严格按：①我是谁（身份一句话）②我走过的路（改变故事，一句话，要有画面感，让人感受到真实的before和after）③我现在在分享什么④欢迎来找我。禁用：赋能、蜕变、绽放、逆袭、焕新、裂变。",
+  "firstVideo": "第一条视频号内容建议，分四行输出：\n【话题标题】具体标题（人群+真实场景，不超过20字）\n【前3秒开场】口语化，制造共鸣，像在对一个朋友说话\n【核心内容】2-3个要点，每点一行，说人话\n【结尾钩子】引导互动的一句话",
+  "topics": "3个内容话题，每个话题单独一行，格式：话题X：【标题】— 为什么适合TA（一句话）",
   "tags": ["标签1","标签2","标签3","标签4","标签5"]
 }
 
-要求：口语化中文，禁用：赋能、蜕变、绽放、逆袭、裂变、焕新。突出真实个人痕迹，不只写产品功效。话题标题符合视频号合规：无疗效承诺、无极限词、无医疗用语。`;
+要求：结合用户的真实回答，不要套模板。话题标题合规：无疗效承诺、无极限词、无医疗用语。`;
 
   try {
     const res = await fetch('https://nutrition-api-xfwnyqpxkc.cn-hangzhou.fcapp.run', {
@@ -577,8 +574,12 @@ async function generate() {
     document.getElementById('result-name').textContent = `${answers.name} 的 IP 档案`;
     document.getElementById('out-positioning').textContent = result.positioning;
     document.getElementById('out-bio').textContent = result.bio;
-    document.getElementById('out-first-video').textContent = result.firstVideo;
-    document.getElementById('out-topics').textContent = result.topics;
+    document.getElementById('out-first-video').textContent = typeof result.firstVideo === 'string'
+      ? result.firstVideo
+      : Object.entries(result.firstVideo).map(([k,v])=>`${k}：${v}`).join('\n');
+    document.getElementById('out-topics').textContent = Array.isArray(result.topics)
+      ? result.topics.map((t,i)=> typeof t === 'string' ? t : `话题${i+1}：【${t.title||t.标题||''}】— ${t.reason||t.reason||t['为什么']||''}`).join('\n')
+      : result.topics;
 
     const tagsEl = document.getElementById('out-tags');
     tagsEl.innerHTML = '';
