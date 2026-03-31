@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>今日内容创作</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a18;
+    --ink-2: #4a4a45;
+    --ink-3: #8a8a82;
+    --paper: #f7f5f0;
+    --paper-2: #eeece6;
+    --accent: #c4621a;
+    --accent-light: #f5e8dc;
+    --blue: #3d5afe;
+    --blue-light: #e8f0fe;
+    --border: rgba(26,26,24,0.12);
+    --serif: 'Noto Serif SC', serif;
+    --sans: 'Noto Sans SC', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--sans); font-weight: 300; min-height: 100vh; }
+
+  /* Header */
+  .header { padding: 2.5rem 2rem 1.5rem; max-width: 640px; margin: 0 auto; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+  .header-eyebrow { font-size: 11px; letter-spacing: 0.15em; color: var(--accent); margin-bottom: 8px; font-weight: 400; text-transform: uppercase; }
+  .header h1 { font-family: var(--serif); font-size: 22px; font-weight: 600; }
+  .header-date { font-size: 12px; color: var(--ink-3); margin-top: 4px; }
+  .back-link { font-size: 12px; color: var(--ink-3); text-decoration: none; border: 1px solid var(--border); border-radius: 6px; padding: 7px 12px; white-space: nowrap; flex-shrink: 0; transition: all 0.2s; margin-top: 4px; }
+  .back-link:hover { color: var(--accent); border-color: var(--accent); }
+
+  .main { max-width: 640px; margin: 0 auto; padding: 1.5rem 2rem 5rem; }
+
+  /* IP mini card */
+  .ip-mini-card { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; margin-bottom: 1.5rem; }
+  .ip-mini-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; gap: 10px; }
+  .ip-mini-label { font-size: 11px; color: var(--accent); font-weight: 500; letter-spacing: 0.08em; margin-bottom: 3px; }
+  .ip-mini-name { font-size: 14px; font-weight: 500; }
+  .ip-mini-toggle { font-size: 12px; color: var(--ink-3); flex-shrink: 0; }
+  .ip-mini-body { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); display: none; }
+  .ip-mini-body.open { display: block; }
+  .ip-mini-pos { font-size: 13px; color: var(--ink-2); line-height: 1.7; margin-bottom: 8px; }
+  .ip-mini-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+  .ip-mini-tag { font-size: 11px; padding: 3px 9px; border-radius: 20px; background: var(--accent-light); color: var(--accent); }
+
+  .no-ip-notice { background: var(--blue-light); border-radius: 10px; padding: 14px 16px; margin-bottom: 1.5rem; font-size: 13px; color: var(--ink-2); line-height: 1.8; }
+  .no-ip-notice a { color: var(--blue); text-decoration: none; font-weight: 500; }
+  .no-ip-label { font-size: 12px; color: var(--ink-3); margin: 10px 0 5px; display: block; }
+  .no-ip-textarea { width: 100%; background: white; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-family: var(--sans); font-size: 13px; font-weight: 300; color: var(--ink); outline: none; resize: none; min-height: 70px; line-height: 1.7; transition: border-color 0.2s; }
+  .no-ip-textarea:focus { border-color: var(--blue); }
+
+  /* Section */
+  .section-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1rem; gap: 10px; }
+  .section-title { font-family: var(--serif); font-size: 18px; font-weight: 600; }
+  .section-sub { font-size: 13px; color: var(--ink-3); margin-top: 3px; }
+  .btn-refresh { font-size: 12px; color: var(--ink-3); background: none; border: 1px solid var(--border); border-radius: 6px; padding: 7px 12px; cursor: pointer; font-family: var(--sans); transition: all 0.2s; flex-shrink: 0; margin-top: 2px; }
+  .btn-refresh:hover { color: var(--accent); border-color: var(--accent); }
+  .btn-refresh:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* News cards */
+  .news-grid { display: flex; flex-direction: column; gap: 10px; }
+  .news-card { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; transition: border-color 0.2s; }
+  .news-card-top { display: flex; align-items: flex-start; gap: 12px; }
+  .news-num { width: 24px; height: 24px; border-radius: 50%; background: var(--paper-2); color: var(--ink-3); font-size: 11px; font-weight: 500; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; transition: all 0.2s; }
+  .news-body { flex: 1; min-width: 0; }
+  .news-title { font-size: 14px; font-weight: 500; color: var(--ink); line-height: 1.5; margin-bottom: 5px; }
+  .news-summary { font-size: 13px; color: var(--ink-2); line-height: 1.7; margin-bottom: 8px; }
+  .news-angle { font-size: 12px; color: var(--accent); background: var(--accent-light); border-radius: 4px; padding: 3px 8px; display: inline-block; line-height: 1.5; }
+  .btn-select { font-size: 13px; color: var(--accent); background: none; border: 1px solid var(--accent); border-radius: 6px; padding: 8px 14px; cursor: pointer; font-family: var(--sans); transition: all 0.2s; margin-top: 10px; width: 100%; font-weight: 500; }
+  .btn-select:hover, .btn-select:focus { background: var(--accent); color: white; }
+
+  /* Skeleton loading */
+  .skel-card { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 10px; }
+  .skel-line { border-radius: 6px; background: linear-gradient(90deg, var(--paper-2) 25%, #e5e3dc 50%, var(--paper-2) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
+  @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+
+  /* Feeling section */
+  .feeling-section { animation: fadeUp 0.35s ease; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  .selected-topic-card { background: var(--accent-light); border: 1px solid rgba(196,98,26,0.2); border-radius: 10px; padding: 12px 16px; margin-bottom: 1.25rem; }
+  .stc-label { font-size: 11px; color: var(--accent); font-weight: 500; margin-bottom: 5px; letter-spacing: 0.08em; }
+  .stc-title { font-size: 14px; font-weight: 500; line-height: 1.5; }
+
+  .feeling-hint { font-size: 13px; color: var(--ink-3); line-height: 1.8; margin-bottom: 12px; }
+  .feeling-input-wrap { position: relative; }
+  .feeling-textarea { width: 100%; background: white; border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px 52px; font-family: var(--sans); font-size: 14px; font-weight: 300; color: var(--ink); outline: none; resize: none; min-height: 130px; line-height: 1.7; transition: border-color 0.2s; }
+  .feeling-textarea:focus { border-color: var(--accent); }
+  .feeling-textarea.recording { border-color: #e53935; box-shadow: 0 0 0 2px rgba(229,57,53,0.1); }
+  .voice-bar { position: absolute; bottom: 0; left: 0; right: 0; padding: 9px 12px; background: rgba(255,255,255,0.96); border-top: 1px solid var(--border); border-radius: 0 0 8px 8px; display: flex; align-items: center; gap: 10px; }
+  .btn-voice { background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 7px; font-family: var(--sans); font-size: 12px; color: var(--ink-3); transition: color 0.2s; padding: 3px 0; }
+  .btn-voice:hover { color: var(--ink-2); }
+  .btn-voice.active { color: #e53935; }
+  .voice-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex-shrink: 0; transition: transform 0.2s; }
+  .btn-voice.active .voice-dot { animation: pulse-dot 0.9s ease-in-out infinite; }
+  @keyframes pulse-dot { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.6; } }
+  .voice-tip { font-size: 11px; color: var(--ink-3); }
+  .voice-no-support { font-size: 11px; color: var(--ink-3); }
+
+  .btn-generate { width: 100%; background: var(--accent); color: white; border: none; border-radius: 8px; padding: 14px; font-family: var(--sans); font-size: 15px; font-weight: 500; cursor: pointer; margin-top: 14px; transition: opacity 0.2s; }
+  .btn-generate:hover { opacity: 0.88; }
+  .btn-generate:disabled { opacity: 0.3; cursor: not-allowed; }
+  .btn-back-topics { background: none; border: none; font-family: var(--sans); font-size: 13px; color: var(--ink-3); cursor: pointer; margin-top: 8px; width: 100%; padding: 8px; transition: color 0.2s; }
+  .btn-back-topics:hover { color: var(--ink); }
+
+  /* Script section */
+  .script-section { animation: fadeUp 0.35s ease; }
+  .script-card { background: white; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; overflow: hidden; }
+  .script-card-head { display: flex; align-items: center; justify-content: space-between; padding: 9px 14px; border-bottom: 1px solid var(--border); background: var(--paper); }
+  .script-label-wrap { display: flex; align-items: center; gap: 8px; }
+  .script-time { font-size: 11px; color: var(--ink-3); }
+  .script-label { font-size: 11px; font-weight: 500; letter-spacing: 0.05em; padding: 3px 9px; border-radius: 20px; }
+  .sl-hook    { background: #fff3e0; color: #e65100; }
+  .sl-empathy { background: #e3f2fd; color: #1565c0; }
+  .sl-topic   { background: #fce4ec; color: #880e4f; }
+  .sl-story   { background: #e8f5e9; color: #1b5e20; }
+  .sl-insight { background: #ede7f6; color: #4527a0; }
+  .sl-closing { background: #fff8e1; color: #f57f17; }
+  .btn-copy-section { font-size: 11px; color: var(--ink-3); background: none; border: 1px solid var(--border); border-radius: 4px; padding: 3px 8px; cursor: pointer; font-family: var(--sans); transition: all 0.2s; }
+  .btn-copy-section:hover { color: var(--accent); border-color: var(--accent); }
+  .script-content { padding: 13px 14px; font-size: 14px; line-height: 1.9; color: var(--ink); white-space: pre-wrap; }
+
+  .script-actions { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+  .btn-copy-all { background: var(--accent); color: white; border: none; border-radius: 8px; padding: 13px; font-family: var(--sans); font-size: 14px; font-weight: 500; cursor: pointer; transition: opacity 0.2s; }
+  .btn-copy-all:hover { opacity: 0.88; }
+  .btn-another { background: none; border: 1px solid var(--border); border-radius: 8px; padding: 13px; font-family: var(--sans); font-size: 14px; color: var(--ink-2); cursor: pointer; transition: all 0.2s; }
+  .btn-another:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Loading overlay */
+  .loading-overlay { text-align: center; padding: 3rem 1rem; }
+  .spinner { width: 28px; height: 28px; border: 2px solid var(--paper-2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-family: var(--serif); font-size: 16px; color: var(--ink-2); margin-bottom: 5px; }
+  .loading-sub { font-size: 12px; color: var(--ink-3); }
+
+  /* Error */
+  .error-box { background: #fff5f5; border: 1px solid #ffcdd2; border-radius: 10px; padding: 14px 16px; font-size: 13px; color: #c62828; line-height: 1.7; margin-bottom: 12px; }
+  .btn-retry { width: 100%; border: 1px solid var(--border); background: none; border-radius: 8px; padding: 11px; font-family: var(--sans); font-size: 13px; cursor: pointer; color: var(--ink-2); transition: all 0.2s; }
+  .btn-retry:hover { border-color: var(--accent); color: var(--accent); }
+
+  .hidden { display: none !important; }
+
+  @media (max-width: 480px) {
+    .header { padding: 1.5rem 1.25rem 1rem; }
+    .main { padding: 1.25rem 1.25rem 5rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-eyebrow">安利 · 内容创作</div>
+    <h1>今日内容创作</h1>
+    <div class="header-date" id="header-date"></div>
+  </div>
+  <a href="ip-tool.html" class="back-link">IP 梳理</a>
+</div>
+
+<div class="main">
+
+  <!-- IP 档案卡片 -->
+  <div id="ip-section"></div>
+
+  <!-- 热点话题 -->
+  <div id="news-section">
+    <div class="section-head">
+      <div>
+        <div class="section-title">今日热点话题</div>
+        <div class="section-sub">根据你的 IP 精选，选一条最有感觉的</div>
+      </div>
+      <button class="btn-refresh" id="btn-refresh" onclick="fetchNews()">换一批</button>
+    </div>
+    <div class="news-grid" id="news-content"></div>
+  </div>
+
+  <!-- 感受输入 -->
+  <div id="feeling-section" class="hidden feeling-section">
+    <div class="section-head">
+      <div>
+        <div class="section-title">你的感受</div>
+        <div class="section-sub">说真心话，越真实越有力量</div>
+      </div>
+    </div>
+    <div class="selected-topic-card">
+      <div class="stc-label">你选的话题</div>
+      <div class="stc-title" id="selected-topic-title"></div>
+    </div>
+    <p class="feeling-hint">看到这条话题，你第一反应是什么？<br>联想到的经历、你的立场、一个情绪……都可以。不用完整，说人话。</p>
+    <div class="feeling-input-wrap">
+      <textarea class="feeling-textarea" id="feeling-input"
+        placeholder="比如：看到这个我想到了自己三年前……&#10;或者我一直觉得这件事……&#10;或者这让我想起一个客户……"
+        oninput="checkFeelingInput()"></textarea>
+      <div class="voice-bar" id="voice-bar">
+        <button class="btn-voice" id="btn-voice" onclick="toggleVoice()">
+          <span class="voice-dot"></span>
+          <span id="voice-label">语音输入</span>
+        </button>
+        <span id="voice-tip" class="voice-tip">点击用语音说感受</span>
+      </div>
+    </div>
+    <button class="btn-generate" id="btn-generate" disabled onclick="generateScript()">生成今日文案 ✦</button>
+    <button class="btn-back-topics" onclick="backToNews()">← 换一条话题</button>
+  </div>
+
+  <!-- 文案结果 -->
+  <div id="script-section" class="hidden script-section">
+    <div class="section-head">
+      <div>
+        <div class="section-title">今日视频文案</div>
+        <div class="section-sub">约 60 秒口播，可直接使用或微调</div>
+      </div>
+    </div>
+    <div id="script-content"></div>
+    <div class="script-actions">
+      <button class="btn-copy-all" onclick="copyAll()">复制完整文案</button>
+      <button class="btn-another" onclick="startOver()">重新选话题，再写一条</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API = 'https://nutrition-api-xfwnyqpxkc.cn-hangzhou.fcapp.run';
+
+let ipData = null;
+let newsTopics = [];
+let selectedTopicIndex = -1;
+let isRecording = false;
+let recognition = null;
+let confirmedText = '';
+let currentScript = null;
+
+const SCRIPT_SECTIONS = [
+  { key: 'hook',    label: '黄金开场', time: '0–3 秒',   cls: 'sl-hook'    },
+  { key: 'empathy', label: '共鸣场景', time: '3–10 秒',  cls: 'sl-empathy' },
+  { key: 'topic',   label: '话题切入', time: '10–20 秒', cls: 'sl-topic'   },
+  { key: 'story',   label: '个人故事', time: '20–40 秒', cls: 'sl-story'   },
+  { key: 'insight', label: '干货洞察', time: '40–55 秒', cls: 'sl-insight' },
+  { key: 'closing', label: '暖收尾',   time: '55–60 秒', cls: 'sl-closing' },
+];
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+
+(function init() {
+  const now = new Date();
+  const wd = ['日','一','二','三','四','五','六'];
+  document.getElementById('header-date').textContent =
+    `${now.getMonth()+1} 月 ${now.getDate()} 日  星期${wd[now.getDay()]}`;
+
+  loadIPSection();
+  fetchNews();
+  initSpeech();
+})();
+
+// ── IP Section ───────────────────────────────────────────────────────────────
+
+function loadIPSection() {
+  const el = document.getElementById('ip-section');
+  const stored = localStorage.getItem('ip_profile');
+  if (stored) {
+    try {
+      ipData = JSON.parse(stored);
+      const name = ipData.answers?.name || '你';
+      const pos  = ipData.result?.positioning || '';
+      const tags = ipData.result?.tags || [];
+      el.innerHTML = `
+        <div class="ip-mini-card">
+          <div class="ip-mini-header" onclick="toggleIPBody()">
+            <div>
+              <div class="ip-mini-label">IP 档案</div>
+              <div class="ip-mini-name">${esc(name)}</div>
+            </div>
+            <span class="ip-mini-toggle" id="ip-toggle">展开 ↓</span>
+          </div>
+          <div class="ip-mini-body" id="ip-mini-body">
+            <div class="ip-mini-pos">${esc(pos)}</div>
+            <div class="ip-mini-tags">${tags.map(t=>`<span class="ip-mini-tag">${esc(t)}</span>`).join('')}</div>
+          </div>
+        </div>`;
+      return;
+    } catch(e) {}
+  }
+  // No IP
+  ipData = { manualMode: true, manual: '' };
+  el.innerHTML = `
+    <div class="no-ip-notice">
+      还没有 IP 档案。<a href="ip-tool.html">先去做个 IP 梳理</a>，生成内容会更贴合你。<br>
+      或者简单描述一下你是谁：
+      <label class="no-ip-label">你的 IP 定位（一两句话）</label>
+      <textarea class="no-ip-textarea" id="manual-ip"
+        placeholder="例：我是两个孩子的宝妈，安利顾问，帮助宝妈在照顾家人的同时照顾好自己……"
+        oninput="updateManualIP()"></textarea>
+    </div>`;
+}
+
+function toggleIPBody() {
+  const body   = document.getElementById('ip-mini-body');
+  const toggle = document.getElementById('ip-toggle');
+  const open   = body.classList.toggle('open');
+  toggle.textContent = open ? '收起 ↑' : '展开 ↓';
+}
+
+function updateManualIP() {
+  if (ipData) ipData.manual = document.getElementById('manual-ip')?.value?.trim() || '';
+}
+
+function getIPSummary() {
+  if (!ipData) return '健康领域内容创作者';
+  if (ipData.manualMode) return ipData.manual || '健康领域内容创作者';
+  const a = ipData.answers || {};
+  const r = ipData.result  || {};
+  return [
+    r.positioning || '',
+    a.core_value  ? `核心价值：${a.core_value}` : '',
+    a.traits      ? `个人特质：${a.traits}`      : '',
+    r.tags?.length ? `标签：${r.tags.join('、')}` : '',
+  ].filter(Boolean).join('\n');
+}
+
+function getIPDetails() {
+  if (!ipData || ipData.manualMode) {
+    return ipData?.manual || '健康领域内容创作者';
+  }
+  const a = ipData.answers || {};
+  const r = ipData.result  || {};
+  return [
+    `定位：${r.positioning || ''}`,
+    `核心价值：${a.core_value || ''}`,
+    `个人特质：${a.traits || ''}`,
+    `个人经历转变：${a.transformation || ''}`,
+    `说话风格：${a.how_talk || ''}`,
+    `最不想被认为：${a.not_want || ''}`,
+    `标签：${(r.tags||[]).join('、')}`,
+  ].filter(s => !s.endsWith('：')).join('\n');
+}
+
+// ── News ─────────────────────────────────────────────────────────────────────
+
+async function fetchNews() {
+  const btn     = document.getElementById('btn-refresh');
+  const content = document.getElementById('news-content');
+  btn.disabled  = true;
+  btn.textContent = '获取中…';
+  content.innerHTML = skeletons(5);
+
+  const prompt = `你是一位内容策略师，帮助微信视频号创作者找到当下值得借势的热点话题。
+
+创作者 IP 定位：
+${getIPSummary()}
+
+请为这位创作者推荐 5 个当前（2025–2026 年）在中国互联网有较高讨论度、与其 IP 高度相关的话题方向。
+
+要求：
+1. 话题真实可信，像真实传播中的内容（社会现象、健康趋势、生活方式议题均可）
+2. 每个话题都有明确的切入角度，结合创作者 IP
+3. 话题标题有钩子感，让人想了解
+4. 类型多样：情感共鸣型、实用干货型、反常识型、故事型各有覆盖
+5. 合规：不涉及医疗诊断，不做疗效承诺
+
+严格输出纯 JSON，不要 markdown 代码块：
+{
+  "topics": [
+    {
+      "title": "话题标题（15–25 字，有钩子）",
+      "summary": "话题背景，为什么现在热（50 字以内）",
+      "angle": "建议这位创作者的切入角度（20 字以内）"
+    }
+  ]
+}`;
+
+  try {
+    const res  = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1200,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data   = await res.json();
+    const text   = data.content.map(i => i.text || '').join('');
+    const result = JSON.parse(text.replace(/```json|```/g, '').trim());
+    newsTopics   = result.topics || [];
+    renderNews();
+  } catch(e) {
+    content.innerHTML = `
+      <div class="error-box">话题获取失败，请检查网络后重试。</div>
+      <button class="btn-retry" onclick="fetchNews()">重试</button>`;
+  }
+
+  btn.disabled    = false;
+  btn.textContent = '换一批';
+}
+
+function skeletons(n) {
+  return Array(n).fill(0).map(() => `
+    <div class="skel-card">
+      <div class="skel-line" style="height:14px;width:75%;margin-bottom:10px;"></div>
+      <div class="skel-line" style="height:12px;width:90%;margin-bottom:6px;"></div>
+      <div class="skel-line" style="height:12px;width:60%;"></div>
+    </div>`).join('');
+}
+
+function renderNews() {
+  document.getElementById('news-content').innerHTML = newsTopics.map((t, i) => `
+    <div class="news-card">
+      <div class="news-card-top">
+        <div class="news-num">${i + 1}</div>
+        <div class="news-body">
+          <div class="news-title">${esc(t.title)}</div>
+          <div class="news-summary">${esc(t.summary)}</div>
+          <span class="news-angle">切入：${esc(t.angle)}</span>
+        </div>
+      </div>
+      <button class="btn-select" onclick="selectTopic(${i})">就选这条 →</button>
+    </div>`).join('');
+}
+
+function selectTopic(i) {
+  selectedTopicIndex = i;
+  document.getElementById('selected-topic-title').textContent = newsTopics[i].title;
+  document.getElementById('feeling-input').value = '';
+  document.getElementById('btn-generate').disabled = true;
+
+  document.getElementById('news-section').classList.add('hidden');
+  document.getElementById('feeling-section').classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function backToNews() {
+  if (isRecording) stopRecording();
+  document.getElementById('feeling-section').classList.add('hidden');
+  document.getElementById('news-section').classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Feeling Input ─────────────────────────────────────────────────────────────
+
+function checkFeelingInput() {
+  const val = document.getElementById('feeling-input').value.trim();
+  document.getElementById('btn-generate').disabled = val.length < 8;
+}
+
+// ── Voice Recognition ─────────────────────────────────────────────────────────
+
+function initSpeech() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    document.getElementById('voice-bar').innerHTML =
+      '<span class="voice-no-support">当前浏览器不支持语音输入（推荐 Chrome），请直接文字输入</span>';
+    return;
+  }
+
+  recognition = new SR();
+  recognition.lang = 'zh-CN';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  recognition.onresult = e => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) confirmedText += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    document.getElementById('feeling-input').value = confirmedText + interim;
+    checkFeelingInput();
+  };
+
+  recognition.onend = () => {
+    if (isRecording) {
+      try { recognition.start(); } catch(err) {}
+    }
+  };
+
+  recognition.onerror = e => {
+    if (e.error !== 'aborted' && e.error !== 'no-speech') stopRecording();
+  };
+}
+
+function toggleVoice() {
+  isRecording ? stopRecording() : startRecording();
+}
+
+function startRecording() {
+  if (!recognition) return;
+  confirmedText = document.getElementById('feeling-input').value.trim();
+  if (confirmedText) confirmedText += '，';
+  try {
+    recognition.start();
+    isRecording = true;
+    document.getElementById('btn-voice').classList.add('active');
+    document.getElementById('voice-label').textContent = '停止录音';
+    document.getElementById('voice-tip').textContent   = '录音中，再次点击停止…';
+    document.getElementById('feeling-input').classList.add('recording');
+  } catch(e) {}
+}
+
+function stopRecording() {
+  isRecording = false;
+  try { recognition?.stop(); } catch(e) {}
+  confirmedText = document.getElementById('feeling-input').value.trim();
+  document.getElementById('btn-voice').classList.remove('active');
+  document.getElementById('voice-label').textContent = '语音输入';
+  document.getElementById('voice-tip').textContent   = '点击用语音说感受';
+  document.getElementById('feeling-input').classList.remove('recording');
+  checkFeelingInput();
+}
+
+// ── Script Generation ─────────────────────────────────────────────────────────
+
+async function generateScript() {
+  if (isRecording) stopRecording();
+
+  const feeling = document.getElementById('feeling-input').value.trim();
+  const topic   = newsTopics[selectedTopicIndex];
+
+  document.getElementById('feeling-section').classList.add('hidden');
+  document.getElementById('script-section').classList.remove('hidden');
+  document.getElementById('script-content').innerHTML = `
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      <div class="loading-text">正在生成你的文案…</div>
+      <div class="loading-sub">结合热点 · 你的感受 · 爆款口播结构</div>
+    </div>`;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  const prompt = `你是一位顶尖短视频口播文案专家，专为微信视频号创作者写有灵魂的内容。
+
+创作者 IP 档案：
+${getIPDetails()}
+
+今日热点话题：
+标题：${topic.title}
+背景：${topic.summary}
+建议切入角度：${topic.angle}
+
+创作者看到这条话题的真实感受：
+${feeling}
+
+请写一条约 60 秒的视频口播文案，分 6 个部分。
+
+要求：
+- 语气符合创作者真实个性，参考她的特质和说话风格
+- 禁用词：赋能、蜕变、绽放、逆袭、裂变、焕新
+- 不做疗效承诺，合规表达，避免医疗用语
+- 创作者的真实感受要自然融入，不要生硬引用
+- 要有血有肉，像真人说话，不像模板套话
+- 6 个部分自然衔接，浑然一体
+
+严格输出纯 JSON，不要 markdown 代码块：
+{
+  "hook":    "黄金开场（0–3秒）：一句话让目标人群停下来，有画面感或强共鸣",
+  "empathy": "共鸣场景（3–10秒）：描述目标人群的真实处境，像在说观众心里的话",
+  "topic":   "话题切入（10–20秒）：自然引入热点话题，表达创作者的真实态度或立场",
+  "story":   "个人故事（20–40秒）：结合创作者经历和本次感受，有细节有温度，不说教",
+  "insight": "干货洞察（40–55秒）：给出 1–2 个真实有用的观点或方法，接地气，不装专家",
+  "closing": "暖收尾（55–60秒）：一句引导互动或留悬念的话，符合创作者气质"
+}`;
+
+  try {
+    const res    = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1500,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data   = await res.json();
+    const text   = data.content.map(i => i.text || '').join('');
+    currentScript = JSON.parse(text.replace(/```json|```/g, '').trim());
+    renderScript(currentScript);
+  } catch(e) {
+    document.getElementById('script-content').innerHTML = `
+      <div class="error-box">生成遇到问题，请重试。</div>
+      <button class="btn-retry" onclick="retryScript()">← 返回重试</button>`;
+  }
+}
+
+function retryScript() {
+  document.getElementById('script-section').classList.add('hidden');
+  document.getElementById('feeling-section').classList.remove('hidden');
+}
+
+function renderScript(script) {
+  document.getElementById('script-content').innerHTML = SCRIPT_SECTIONS.map(s => `
+    <div class="script-card">
+      <div class="script-card-head">
+        <div class="script-label-wrap">
+          <span class="script-label ${s.cls}">${s.label}</span>
+          <span class="script-time">${s.time}</span>
+        </div>
+        <button class="btn-copy-section" onclick="copySection('${s.key}', this)">复制</button>
+      </div>
+      <div class="script-content" id="sc-${s.key}">${esc(script[s.key] || '')}</div>
+    </div>`).join('');
+}
+
+function copySection(key, btn) {
+  const text = document.getElementById('sc-' + key)?.textContent || '';
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = '已复制 ✓';
+    setTimeout(() => btn.textContent = orig, 1500);
+  });
+}
+
+function copyAll() {
+  if (!currentScript) return;
+  const full = SCRIPT_SECTIONS
+    .map(s => `【${s.label}】\n${currentScript[s.key] || ''}`)
+    .join('\n\n');
+  navigator.clipboard.writeText(full).then(() => {
+    const btn = document.querySelector('.btn-copy-all');
+    btn.textContent = '已复制 ✓';
+    setTimeout(() => btn.textContent = '复制完整文案', 2000);
+  });
+}
+
+function startOver() {
+  currentScript      = null;
+  selectedTopicIndex = -1;
+  document.getElementById('script-section').classList.add('hidden');
+  document.getElementById('news-section').classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+
+function esc(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+</script>
+</body>
+</html>
