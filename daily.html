@@ -194,7 +194,7 @@
         <div class="section-title">今日热点话题</div>
         <div class="section-sub">根据你的 IP 精选，选一条最有感觉的</div>
       </div>
-      <button class="btn-refresh" id="btn-refresh" onclick="lastTrendingKeywords=null;fetchNews()">换一批</button>
+      <button class="btn-refresh" id="btn-refresh" onclick="fetchNews()">换一批</button>
     </div>
     <div class="news-grid" id="news-content"></div>
   </div>
@@ -381,7 +381,20 @@ async function fetchTrending() {
   return null;
 }
 
-let lastTrendingKeywords = null; // 缓存，避免反复请求
+let lastTrendingKeywords = null; // 缓存热榜词
+
+/* 后台悄悄抓热榜，绝不阻塞主流程 */
+function prefetchTrending() {
+  if (lastTrendingKeywords) return;
+  fetchTrending().then(kw => {
+    if (kw && kw.length) {
+      lastTrendingKeywords = kw;
+      // 更新副标题角标（如果新闻区还在显示）
+      const sub = document.querySelector('#news-section .section-sub');
+      if (sub) sub.innerHTML = `已接入实时热榜 <span class="news-realtime-tag"><span class="news-realtime-dot"></span>实时</span>`;
+    }
+  }).catch(() => {});
+}
 
 async function fetchNews() {
   const btn     = document.getElementById('btn-refresh');
@@ -390,24 +403,17 @@ async function fetchNews() {
   btn.textContent = '获取中…';
   content.innerHTML = skeletons(5);
 
-  /* 更新标题区——如果拿到实时热榜，显示"实时"角标 */
-  const sectionSub = document.querySelector('#news-section .section-sub');
+  // 后台触发热榜预取，完全不等待结果
+  prefetchTrending();
 
-  // 尝试拿实时热榜：外层兜底，最多等 5 秒，超时直接跳过
-  if (!lastTrendingKeywords) {
-    lastTrendingKeywords = await Promise.race([
-      fetchTrending(),
-      new Promise(res => setTimeout(() => res(null), 5000))
-    ]);
-  }
+  // 直接用缓存（如果已有），否则不传热榜词，不影响速度
   const trendingBlock = lastTrendingKeywords
     ? `\n\n【当前微博实时热榜关键词（参考使用，结合健康话题借势）】\n${lastTrendingKeywords.join(' / ')}`
     : '';
 
-  if (sectionSub) {
-    sectionSub.innerHTML = lastTrendingKeywords
-      ? `已接入实时热榜 <span class="news-realtime-tag"><span class="news-realtime-dot"></span>实时</span>`
-      : '根据你的 IP 智能推荐';
+  const sectionSub = document.querySelector('#news-section .section-sub');
+  if (sectionSub && !lastTrendingKeywords) {
+    sectionSub.textContent = '根据你的 IP 智能推荐';
   }
 
   const today = new Date().toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
