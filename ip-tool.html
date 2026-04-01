@@ -117,6 +117,21 @@
   .copy-btn { width: 100%; margin-top: 10px; background: none; border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-family: var(--sans); font-size: 13px; color: var(--ink-2); cursor: pointer; transition: all 0.2s; }
   .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
 
+  /* 欢迎回来屏 */
+  #welcome-back { display: none; max-width: 640px; margin: 0 auto; padding: 2rem 2rem 4rem; }
+  .wb-eyebrow { font-size: 11px; letter-spacing: 0.15em; color: var(--accent); font-weight: 400; text-transform: uppercase; margin-bottom: 10px; }
+  .wb-title { font-family: var(--serif); font-size: 24px; font-weight: 600; margin-bottom: 6px; }
+  .wb-sub { font-size: 14px; color: var(--ink-3); margin-bottom: 24px; line-height: 1.7; }
+  .wb-card { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 20px; }
+  .wb-card-label { font-size: 11px; letter-spacing: 0.1em; color: var(--accent); margin-bottom: 8px; font-weight: 500; text-transform: uppercase; }
+  .wb-card-content { font-size: 14px; line-height: 1.85; color: var(--ink); }
+  .wb-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .wb-tag { font-size: 12px; padding: 4px 12px; border-radius: 20px; background: var(--accent-light); color: var(--accent); }
+  .btn-go-daily { display: block; text-align: center; background: var(--accent); color: white; border-radius: 8px; padding: 15px; font-family: var(--sans); font-size: 15px; font-weight: 500; text-decoration: none; margin-bottom: 10px; transition: opacity 0.2s; }
+  .btn-go-daily:hover { opacity: 0.88; }
+  .btn-redo { width: 100%; background: none; border: 1px solid var(--border); border-radius: 8px; padding: 13px; font-family: var(--sans); font-size: 13px; color: var(--ink-3); cursor: pointer; transition: all 0.2s; }
+  .btn-redo:hover { color: var(--ink); border-color: var(--ink-2); }
+
   .compliance-box { background: var(--accent-light); border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; font-size: 13px; color: var(--ink-2); line-height: 1.8; }
 
   .restart-btn { width: 100%; margin-top: 12px; background: none; border: 1px solid var(--border); border-radius: 8px; padding: 13px; font-family: var(--sans); font-size: 14px; color: var(--ink-3); cursor: pointer; transition: all 0.2s; }
@@ -131,6 +146,23 @@
 </style>
 </head>
 <body>
+
+<!-- 欢迎回来屏（有记忆时显示，替代问卷） -->
+<div id="welcome-back">
+  <div class="wb-eyebrow">安利 · 个人 IP 梳理</div>
+  <div class="wb-title">欢迎回来，<span id="wb-name"></span> 👋</div>
+  <div class="wb-sub">你的 IP 档案还在，不需要重新梳理。<br>直接去今日内容创作吧。</div>
+  <div class="wb-card">
+    <div class="wb-card-label">你的商业 IP 定位</div>
+    <div class="wb-card-content" id="wb-positioning"></div>
+    <div class="wb-tags" id="wb-tags"></div>
+  </div>
+  <a href="daily.html" class="btn-go-daily">开始今日内容创作 →</a>
+  <button class="btn-redo" onclick="redoIP()">重新梳理 IP（会覆盖现有档案）</button>
+</div>
+
+<!-- 正常问卷流程（无记忆时显示） -->
+<div id="questionnaire-wrap">
 
 <div class="header">
   <div class="header-eyebrow">安利 · 个人 IP 梳理</div>
@@ -392,7 +424,8 @@
     <button class="restart-btn" onclick="restart()">重新梳理 →</button>
   </div>
 
-</div>
+</div><!-- end .main -->
+</div><!-- end #questionnaire-wrap -->
 
 <script>
 const answers = {};
@@ -637,6 +670,46 @@ function restart() {
 }
 
 updateProgress(1);
+
+// ── 记忆检测：页面一打开就判断有没有已有 IP 档案 ──────────────────────────
+(function checkMemory() {
+  const stored = localStorage.getItem('ip_profile');
+  if (!stored) return; // 没有数据，正常显示问卷
+
+  try {
+    const data = JSON.parse(stored);
+    const name = data.answers?.name || '';
+    const positioning = data.result?.positioning || '';
+    const tags = data.result?.tags || [];
+
+    if (!name || !positioning) return; // 数据不完整，正常显示问卷
+
+    // 有完整数据 → 显示欢迎回来屏，隐藏问卷
+    document.getElementById('questionnaire-wrap').style.display = 'none';
+    document.getElementById('welcome-back').style.display = 'block';
+    document.getElementById('wb-name').textContent = name;
+    document.getElementById('wb-positioning').textContent = positioning;
+
+    const tagsEl = document.getElementById('wb-tags');
+    tags.forEach(t => {
+      const span = document.createElement('span');
+      span.className = 'wb-tag';
+      span.textContent = t;
+      tagsEl.appendChild(span);
+    });
+  } catch(e) {
+    // 数据损坏，正常显示问卷
+  }
+})();
+
+// 重新梳理：清掉数据，回到问卷
+function redoIP() {
+  if (!confirm('确认重新梳理？现有的 IP 档案会被覆盖。')) return;
+  localStorage.removeItem('ip_profile');
+  document.getElementById('welcome-back').style.display = 'none';
+  document.getElementById('questionnaire-wrap').style.display = 'block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 </script>
 </body>
 </html>
