@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>使用反馈</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a18;
+    --ink-2: #4a4a45;
+    --ink-3: #8a8a82;
+    --paper: #f7f5f0;
+    --paper-2: #eeece6;
+    --accent: #c4621a;
+    --accent-light: #f5e8dc;
+    --border: rgba(26,26,24,0.12);
+    --serif: 'Noto Serif SC', serif;
+    --sans: 'Noto Sans SC', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--sans); font-weight: 300; min-height: 100vh; }
+
+  .header { padding: 2.5rem 2rem 1.5rem; max-width: 640px; margin: 0 auto; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+  .header-eyebrow { font-size: 11px; letter-spacing: 0.15em; color: var(--accent); margin-bottom: 8px; font-weight: 400; text-transform: uppercase; }
+  .header h1 { font-family: var(--serif); font-size: 22px; font-weight: 600; }
+  .header-sub { font-size: 13px; color: var(--ink-3); margin-top: 5px; line-height: 1.7; }
+  .back-link { font-size: 12px; color: var(--ink-3); text-decoration: none; border: 1px solid var(--border); border-radius: 6px; padding: 7px 12px; white-space: nowrap; flex-shrink: 0; transition: all 0.2s; margin-top: 4px; }
+  .back-link:hover { color: var(--accent); border-color: var(--accent); }
+
+  .main { max-width: 640px; margin: 0 auto; padding: 1.5rem 2rem 4rem; }
+
+  .intro-card { background: var(--accent-light); border-radius: 10px; padding: 14px 16px; margin-bottom: 1.5rem; font-size: 13px; color: var(--ink-2); line-height: 1.8; }
+  .intro-card strong { color: var(--accent); font-weight: 500; }
+
+  .survey-wrap { background: white; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+
+  @media (max-width: 480px) {
+    .header { padding: 1.5rem 1.25rem 1rem; }
+    .main { padding: 1.25rem 1.25rem 4rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-eyebrow">安利 · 内容工具</div>
+    <h1>使用反馈</h1>
+    <div class="header-sub">你的反馈会直接帮助我们改进</div>
+  </div>
+  <a href="daily.html" class="back-link">← 返回创作</a>
+</div>
+
+<div class="main">
+
+  <div class="intro-card">
+    <strong>花 1 分钟填一下</strong>，告诉我们哪里好用、哪里还不够好。<br>
+    每一条反馈我都会认真看，好的建议直接更新到工具里。
+  </div>
+
+  <div class="survey-wrap">
+    <iframe id='idy_frame' height="100%" width="100%"
+      src="https://wj.qq.com/s2/26186570/2f82/"
+      frameborder="0"
+      style="min-height:650px;display:block;"
+      allowfullscreen
+      sandbox="allow-same-origin allow-scripts allow-modals allow-downloads allow-forms allow-popups">
+    </iframe>
+  </div>
+
+</div>
+
+</body>
+</html>
