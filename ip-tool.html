@@ -541,12 +541,13 @@ function showTransition() {
     <div class="lt-row"><span>他人眼中的你：</span>${answers.others_view||'—'}</div>
   `;
   document.getElementById('layer-mid').classList.add('active');
+  // 确保「继续第二步」按钮一定可点（restart 会禁用所有 btn-next）
+  const midBtn = document.querySelector('#layer-mid .btn-next');
+  if (midBtn) midBtn.disabled = false;
   updateProgress(5);
   window.scrollTo({top:0,behavior:'smooth'});
-  // 短暂延迟后把按钮滚入视野，确保手机上可点
   setTimeout(() => {
-    const btn = document.querySelector('#layer-mid .btn-next');
-    if (btn) btn.scrollIntoView({behavior:'smooth', block:'center'});
+    if (midBtn) midBtn.scrollIntoView({behavior:'smooth', block:'center'});
   }, 400);
 }
 
@@ -602,7 +603,7 @@ async function generate() {
 铁律：结合用户真实回答，不套模板。话题标题合规：无疗效承诺、无极限词、无医疗用语、不指向特定产品。`;
 
   try {
-    const res = await fetch('https://5e4e2b0653f04ff4a37ebe0464a973b3-cn-hangzhou.alicloudapi.com/杭州/', {
+    const res = await fetch('https://5e4e2b0653f04ff4a37ebe0464a973b3-cn-hangzhou.alicloudapi.com/%E6%9D%AD%E5%B7%9E/', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
