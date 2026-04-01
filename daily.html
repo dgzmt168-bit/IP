@@ -63,16 +63,33 @@
   .btn-refresh:disabled { opacity: 0.4; cursor: not-allowed; }
 
   /* News cards */
-  .news-grid { display: flex; flex-direction: column; gap: 10px; }
-  .news-card { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; transition: border-color 0.2s; }
-  .news-card-top { display: flex; align-items: flex-start; gap: 12px; }
-  .news-num { width: 24px; height: 24px; border-radius: 50%; background: var(--paper-2); color: var(--ink-3); font-size: 11px; font-weight: 500; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; transition: all 0.2s; }
+  .news-grid { display: flex; flex-direction: column; gap: 14px; }
+  .news-card { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 16px; transition: border-color 0.2s, box-shadow 0.2s; }
+  .news-card:hover { border-color: rgba(196,98,26,0.3); box-shadow: 0 2px 12px rgba(196,98,26,0.07); }
+  .news-card-top { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+  .news-num { width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: white; font-size: 12px; font-weight: 500; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
   .news-body { flex: 1; min-width: 0; }
-  .news-title { font-size: 14px; font-weight: 500; color: var(--ink); line-height: 1.5; margin-bottom: 5px; }
-  .news-summary { font-size: 13px; color: var(--ink-2); line-height: 1.7; margin-bottom: 8px; }
-  .news-angle { font-size: 12px; color: var(--accent); background: var(--accent-light); border-radius: 4px; padding: 3px 8px; display: inline-block; line-height: 1.5; }
-  .btn-select { font-size: 13px; color: var(--accent); background: none; border: 1px solid var(--accent); border-radius: 6px; padding: 8px 14px; cursor: pointer; font-family: var(--sans); transition: all 0.2s; margin-top: 10px; width: 100%; font-weight: 500; }
+  .news-type-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--ink-3); background: var(--paper-2); border-radius: 4px; padding: 2px 7px; margin-bottom: 7px; font-weight: 400; letter-spacing: 0.03em; }
+  .news-title { font-size: 15px; font-weight: 500; color: var(--ink); line-height: 1.55; }
+  .news-divider { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+  .news-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .news-meta-item { background: var(--paper); border-radius: 8px; padding: 9px 11px; }
+  .news-meta-label { font-size: 10px; color: var(--ink-3); letter-spacing: 0.08em; margin-bottom: 4px; font-weight: 500; }
+  .news-meta-value { font-size: 12px; color: var(--ink-2); line-height: 1.6; }
+  .news-outline-block { background: var(--paper); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; }
+  .news-outline-label { font-size: 10px; color: var(--ink-3); letter-spacing: 0.08em; margin-bottom: 7px; font-weight: 500; }
+  .news-outline-list { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+  .news-outline-list li { font-size: 12.5px; color: var(--ink-2); line-height: 1.6; padding-left: 14px; position: relative; }
+  .news-outline-list li::before { content: '▸'; position: absolute; left: 0; color: var(--accent); font-size: 10px; top: 2px; }
+  .news-hook-block { background: var(--accent-light); border-radius: 8px; padding: 10px 12px; border-left: 3px solid var(--accent); margin-bottom: 12px; }
+  .news-hook-label { font-size: 10px; color: var(--accent); letter-spacing: 0.08em; margin-bottom: 4px; font-weight: 500; }
+  .news-hook-text { font-size: 13px; color: var(--ink); line-height: 1.7; font-style: italic; }
+  .news-angle-bar { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--accent); background: var(--accent-light); border-radius: 20px; padding: 4px 10px; margin-bottom: 12px; font-weight: 500; }
+  .btn-select { font-size: 13px; color: var(--accent); background: none; border: 1px solid var(--accent); border-radius: 8px; padding: 10px 14px; cursor: pointer; font-family: var(--sans); transition: all 0.2s; width: 100%; font-weight: 500; }
   .btn-select:hover, .btn-select:focus { background: var(--accent); color: white; }
+  .news-realtime-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; color: #e53935; background: #fff3f3; border: 1px solid #ffc7c7; border-radius: 4px; padding: 2px 7px; margin-left: 6px; vertical-align: middle; font-weight: 500; }
+  .news-realtime-dot { width: 5px; height: 5px; border-radius: 50%; background: #e53935; animation: pulse 1.2s infinite; }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
 
   /* Skeleton loading */
   .skel-card { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 10px; }
@@ -177,7 +194,7 @@
         <div class="section-title">今日热点话题</div>
         <div class="section-sub">根据你的 IP 精选，选一条最有感觉的</div>
       </div>
-      <button class="btn-refresh" id="btn-refresh" onclick="fetchNews()">换一批</button>
+      <button class="btn-refresh" id="btn-refresh" onclick="lastTrendingKeywords=null;fetchNews()">换一批</button>
     </div>
     <div class="news-grid" id="news-content"></div>
   </div>
@@ -345,6 +362,23 @@ function getIPDetails() {
 
 // ── News ─────────────────────────────────────────────────────────────────────
 
+/* 抓取实时热榜关键词（微博热搜，失败静默） */
+async function fetchTrending() {
+  try {
+    const res = await Promise.race([
+      fetch('https://api.vvhan.com/api/hotlist?type=wbhot'),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 5000))
+    ]);
+    const data = await res.json();
+    if (data.success && Array.isArray(data.data) && data.data.length) {
+      return data.data.slice(0, 20).map(i => i.title).filter(Boolean);
+    }
+  } catch(e) {}
+  return null;
+}
+
+let lastTrendingKeywords = null; // 缓存，避免反复请求
+
 async function fetchNews() {
   const btn     = document.getElementById('btn-refresh');
   const content = document.getElementById('news-content');
@@ -352,37 +386,65 @@ async function fetchNews() {
   btn.textContent = '获取中…';
   content.innerHTML = skeletons(5);
 
-  const prompt = `你是一位顶尖内容策略师，专门帮助微信视频号创作者找到能引爆互动的热点话题。
+  /* 更新标题区——如果拿到实时热榜，显示"实时"角标 */
+  const sectionSub = document.querySelector('#news-section .section-sub');
 
+  // 尝试拿实时热榜（第一次或强制刷新才重新抓）
+  if (!lastTrendingKeywords) {
+    lastTrendingKeywords = await fetchTrending();
+  }
+  const trendingBlock = lastTrendingKeywords
+    ? `\n\n【当前微博实时热榜关键词（参考使用，结合健康话题借势）】\n${lastTrendingKeywords.join(' / ')}`
+    : '';
+
+  if (sectionSub) {
+    sectionSub.innerHTML = lastTrendingKeywords
+      ? `已接入实时热榜 <span class="news-realtime-tag"><span class="news-realtime-dot"></span>实时</span>`
+      : '根据你的 IP 智能推荐';
+  }
+
+  const today = new Date().toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
+
+  const prompt = `你是一位顶尖内容策略师，专门帮助微信视频号健康类创作者找到能引爆互动的热点话题。
+
+今天日期：${today}
 创作者 IP：
 ${getIPSummary()}
+${trendingBlock}
 
-任务：为这位创作者推荐 5 个当下在中国互联网有真实热度、且她能借势发挥的话题。
+任务：为这位创作者推荐 5 个当下有真实热度、且她能借势发挥的话题。
 
 话题类型要覆盖以下 5 种（每种各一条，顺序不限）：
-A. 【情绪共鸣型】触碰目标人群当下最普遍的情绪点，看了忍不住转发
-B. 【反常识型】颠覆大家习以为常的认知，让人忍不住想看答案
+A. 【情绪共鸣型】触碰目标人群当下最普遍的情绪，看了忍不住转发
+B. 【反常识型】颠覆大家习以为常的认知，让人想看答案
 C. 【热点借势型】借社会热点/节气/大众讨论，用创作者自己的角度解读
-D. 【故事带入型】以一个真实感极强的他人故事开头，引发强代入感
-E. 【实用干货型】解决目标人群当下具体的困惑，有即时使用价值
+D. 【故事带入型】以真实感极强的他人故事开头，引发代入感
+E. 【实用干货型】解决目标人群当下具体困惑，有即时使用价值
 
 每条话题必须包含：
-- 一个有钩子的视频标题（20 字以内，不能平铺直叙，要让人停下来）
-- 为什么这条话题现在有热度（30 字以内，背景说明）
-- 这位创作者的专属切入角度（结合她的真实经历或核心价值，25 字以内）
-- 开场第一句话的示例（即视频前 3 秒说什么，要有强画面感或强共鸣，不能用"大家好"开头）
+1. title：有钩子的视频标题（18 字以内，让人停下来，不能平铺直叙）
+2. type：话题类型字母（A/B/C/D/E）
+3. type_name：话题类型名称（如"情绪共鸣型"）
+4. why_hot：为什么这条话题现在有热度（40 字以内，说清楚背景）
+5. audience：最精准的目标人群描述（15 字以内，越具体越好）
+6. angle：这位创作者的专属切入角度（结合她真实经历，25 字以内）
+7. outline：内容大纲，3 个具体可拍的点（每条 20 字以内，是视频里要讲的 3 段内容，不是泛泛的标题）
+8. hook_example：视频前 3 秒开场白示例（有强画面感或强共鸣，不能用"大家好"开头，25 字以内）
 
-合规要求：不涉及医疗诊断，不做疗效承诺，不使用极限词。
+合规：不涉及医疗诊断，不做疗效承诺，不使用极限词。
 
 严格输出纯 JSON，不要 markdown 代码块：
 {
   "topics": [
     {
-      "type": "话题类型（A/B/C/D/E）",
+      "type": "A",
+      "type_name": "情绪共鸣型",
       "title": "视频标题",
-      "summary": "热度背景",
+      "why_hot": "热度背景说明",
+      "audience": "目标人群",
       "angle": "创作者切入角度",
-      "hook_example": "开场第一句示例"
+      "outline": ["第一段讲什么", "第二段讲什么", "第三段讲什么"],
+      "hook_example": "开场第一句话"
     }
   ]
 }`;
@@ -393,7 +455,7 @@ E. 【实用干货型】解决目标人群当下具体的困惑，有即时使�
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 1200,
+        max_tokens: 2000,
         messages: [{ role: 'user', content: prompt }]
       })
     });
@@ -415,26 +477,68 @@ E. 【实用干货型】解决目标人群当下具体的困惑，有即时使�
 function skeletons(n) {
   return Array(n).fill(0).map(() => `
     <div class="skel-card">
-      <div class="skel-line" style="height:14px;width:75%;margin-bottom:10px;"></div>
-      <div class="skel-line" style="height:12px;width:90%;margin-bottom:6px;"></div>
-      <div class="skel-line" style="height:12px;width:60%;"></div>
+      <div style="display:flex;gap:10px;margin-bottom:12px;">
+        <div class="skel-line" style="width:26px;height:26px;border-radius:50%;flex-shrink:0;"></div>
+        <div style="flex:1;">
+          <div class="skel-line" style="height:11px;width:40%;margin-bottom:8px;"></div>
+          <div class="skel-line" style="height:15px;width:80%;"></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+        <div class="skel-line" style="height:52px;border-radius:8px;"></div>
+        <div class="skel-line" style="height:52px;border-radius:8px;"></div>
+      </div>
+      <div class="skel-line" style="height:72px;border-radius:8px;margin-bottom:10px;"></div>
+      <div class="skel-line" style="height:52px;border-radius:8px;margin-bottom:10px;"></div>
+      <div class="skel-line" style="height:38px;border-radius:8px;"></div>
     </div>`).join('');
 }
 
 function renderNews() {
-  document.getElementById('news-content').innerHTML = newsTopics.map((t, i) => `
+  const typeEmoji = { A:'💬', B:'🔄', C:'🔥', D:'📖', E:'💡' };
+  document.getElementById('news-content').innerHTML = newsTopics.map((t, i) => {
+    const emoji = typeEmoji[t.type] || '📌';
+    const outlineItems = Array.isArray(t.outline) ? t.outline : [];
+    return `
     <div class="news-card">
       <div class="news-card-top">
         <div class="news-num">${i + 1}</div>
         <div class="news-body">
+          <div class="news-type-badge">${emoji} ${esc(t.type_name || t.type || '')}</div>
           <div class="news-title">${esc(t.title)}</div>
-          <div class="news-summary">${esc(t.summary)}</div>
-          <span class="news-angle">切入：${esc(t.angle)}</span>
-          ${t.hook_example ? `<div style="margin-top:8px;font-size:12px;color:var(--ink-3);line-height:1.6;padding:7px 10px;background:var(--paper);border-radius:5px;border-left:2px solid var(--accent);">开场示例：「${esc(t.hook_example)}」</div>` : ''}
         </div>
       </div>
-      <button class="btn-select" onclick="selectTopic(${i})">就选这条 →</button>
-    </div>`).join('');
+
+      <div class="news-meta-grid">
+        <div class="news-meta-item">
+          <div class="news-meta-label">🌡 为什么现在火</div>
+          <div class="news-meta-value">${esc(t.why_hot || t.summary || '')}</div>
+        </div>
+        <div class="news-meta-item">
+          <div class="news-meta-label">👥 目标人群</div>
+          <div class="news-meta-value">${esc(t.audience || '健康关注人群')}</div>
+        </div>
+      </div>
+
+      <div class="news-angle-bar">🎯 你的切入角度：${esc(t.angle)}</div>
+
+      ${outlineItems.length ? `
+      <div class="news-outline-block">
+        <div class="news-outline-label">📋 内容大纲（3 个可拍点）</div>
+        <ul class="news-outline-list">
+          ${outlineItems.map(p => `<li>${esc(p)}</li>`).join('')}
+        </ul>
+      </div>` : ''}
+
+      ${t.hook_example ? `
+      <div class="news-hook-block">
+        <div class="news-hook-label">🎬 开场前 3 秒说</div>
+        <div class="news-hook-text">「${esc(t.hook_example)}」</div>
+      </div>` : ''}
+
+      <button class="btn-select" onclick="selectTopic(${i})">就选这条，开始创作 →</button>
+    </div>`;
+  }).join('');
 }
 
 function selectTopic(i) {
