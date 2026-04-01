@@ -543,6 +543,11 @@ function showTransition() {
   document.getElementById('layer-mid').classList.add('active');
   updateProgress(5);
   window.scrollTo({top:0,behavior:'smooth'});
+  // 短暂延迟后把按钮滚入视野，确保手机上可点
+  setTimeout(() => {
+    const btn = document.querySelector('#layer-mid .btn-next');
+    if (btn) btn.scrollIntoView({behavior:'smooth', block:'center'});
+  }, 400);
 }
 
 function startLayer2() {
@@ -597,7 +602,7 @@ async function generate() {
 铁律：结合用户真实回答，不套模板。话题标题合规：无疗效承诺、无极限词、无医疗用语、不指向特定产品。`;
 
   try {
-    const res = await fetch('https://morning-queen-906d.dgzmt168.workers.dev', {
+    const res = await fetch('https://5e4e2b0653f04ff4a37ebe0464a973b3-cn-hangzhou.alicloudapi.com/杭州/', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
