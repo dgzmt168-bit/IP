@@ -246,9 +246,9 @@
 </div>
 
 <script>
-// 直接调通义千问（国内服务，无需代理）
-const QWEN_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
-const QWEN_KEY = 'sk-06f7d3c132324784909a7b81efc915dd';
+// Vercel 代理（国内可访问，转发到通义千问）
+const QWEN_URL = 'https://qwen-proxy-indol.vercel.app/api/proxy';
+const QWEN_KEY = '';   // key 存在 Vercel 环境变量里，前端不需要
 const QWEN_MODEL = 'qwen-turbo';
 
 let ipData = null;
@@ -454,7 +454,7 @@ async function fetchNews() {
   try {
     const res = await fetch(QWEN_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${QWEN_KEY}` },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: QWEN_MODEL, messages: [{ role:'user', content:prompt }], max_tokens: 1200 })
     });
 
@@ -754,7 +754,7 @@ ${feeling}
   try {
     const res = await fetch(QWEN_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${QWEN_KEY}` },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: QWEN_MODEL, messages: [{ role:'user', content:prompt }], max_tokens: 2000 })
     });
     if (scriptDone) return;

@@ -617,9 +617,9 @@ async function generate() {
   const ipTimeoutId = setTimeout(() => showIPError('请求超时（60秒），请点击重新开始再试'), 60000);
 
   try {
-    const res = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+    const res = await fetch('https://qwen-proxy-indol.vercel.app/api/proxy', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer sk-06f7d3c132324784909a7b81efc915dd' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: 'qwen-plus', max_tokens: 3000, messages: [{role:'user',content:prompt}] })
     });
     if (ipDone) return;
