@@ -403,10 +403,10 @@ async function fetchNews() {
   const btn     = document.getElementById('btn-refresh');
   const content = document.getElementById('news-content');
   btn.disabled  = true;
-  content.innerHTML = skeletons(3);
+  content.innerHTML = skeletons(2);
 
   // 倒计时
-  let countdown = 40;
+  let countdown = 58;
   btn.textContent = `AI 思考中 ${countdown}s`;
   const countdownTimer = setInterval(() => {
     countdown--;
@@ -430,7 +430,7 @@ async function fetchNews() {
     btn.disabled = false;
     btn.textContent = '换一批';
   }
-  const forceTimeoutId = setTimeout(() => showError('请求超时（40秒），请检查网络后点重试'), 40000);
+  const forceTimeoutId = setTimeout(() => showError('请求超时（58秒），请点重试'), 58000);
 
   // 后台触发热榜预取
   prefetchTrending();
@@ -447,7 +447,7 @@ async function fetchNews() {
   const prompt = `你是微信视频号健康类内容策略师。今天${today}。
 创作者：${getIPSummary()}${trendingBlock}
 
-推荐3个视频话题（情绪共鸣/反常识/实用干货各一），每个含：type_name、title（18字内）、why_hot（25字内）、audience（12字内）、angle（20字内）、outline（3条各12字内的数组）、hook_example（20字内不用大家好）。
+推荐2个视频话题（情绪共鸣、实用干货各一），每个含：type_name、title（15字内）、why_hot（20字内）、audience（10字内）、angle（15字内）、outline（3条各10字内的数组）、hook_example（15字内不用大家好）。
 
 纯JSON，不加任何说明文字：{"topics":[{"type":"A","type_name":"","title":"","why_hot":"","audience":"","angle":"","outline":["","",""],"hook_example":""}]}`;
 
@@ -455,7 +455,7 @@ async function fetchNews() {
     const res = await fetch(QWEN_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: QWEN_MODEL, messages: [{ role:'user', content:prompt }], max_tokens: 1200 })
+      body: JSON.stringify({ model: QWEN_MODEL, messages: [{ role:'user', content:prompt }], max_tokens: 800 })
     });
 
     if (finished) return; // 超时已处理，忽略
