@@ -603,20 +603,22 @@ async function generate() {
 铁律：结合用户真实回答，不套模板。话题标题合规：无疗效承诺、无极限词、无医疗用语、不指向特定产品。`;
 
   try {
-    const res = await fetch('https://5e4e2b0653f04ff4a37ebe0464a973b3-cn-hangzhou.alicloudapi.com/%E6%9D%AD%E5%B7%9E/', {
+    const res = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
       method: 'POST',
-      headers: {'Content-Type':'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer sk-06f7d3c132324784909a7b81efc915dd'
+      },
       body: JSON.stringify({
-        qwen_model: 'qwen-plus',
+        model: 'qwen-plus',
         max_tokens: 3000,
         messages: [{role:'user',content:prompt}]
       })
     });
     if (!res.ok) throw new Error(`网络错误 HTTP ${res.status}`);
     const data = await res.json();
-    if (data.error) throw new Error('API错误: ' + data.error);
-    if (!data.content) throw new Error('响应无content字段: ' + JSON.stringify(data).slice(0,150));
-    const text = data.content.map(i=>i.text||'').join('');
+    if (data.error) throw new Error('API错误: ' + JSON.stringify(data.error));
+    const text = data.choices?.[0]?.message?.content || '';
     if (!text.trim()) throw new Error('模型返回内容为空');
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('无JSON，模型返回: ' + text.slice(0,200));
