@@ -620,7 +620,7 @@ async function generate() {
     const res = await fetch('https://qwen-proxy-indol.vercel.app/api/proxy', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'qwen-plus', max_tokens: 3000, messages: [{role:'user',content:prompt}] })
+      body: JSON.stringify({ model: 'qwen-plus', max_tokens: 4096, messages: [{role:'user',content:prompt}] })
     });
     if (ipDone) return;
     if (!res.ok) { showIPError('网络错误 HTTP ' + res.status); return; }
