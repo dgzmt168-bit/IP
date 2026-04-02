@@ -614,13 +614,13 @@ async function generate() {
       <div style="font-size:12px;color:#888;background:#f5f5f5;padding:10px;border-radius:6px;margin-bottom:16px;word-break:break-all;text-align:left;">${msg}</div>
       <button onclick="restart()" style="padding:10px 20px;border:1px solid #ccc;background:none;cursor:pointer;border-radius:8px;font-family:inherit;">重新开始</button>`;
   }
-  const ipTimeoutId = setTimeout(() => showIPError('请求超时（60秒），请点击重新开始再试'), 60000);
+  const ipTimeoutId = setTimeout(() => showIPError('请求超时（90秒），请点击重新开始再试'), 90000);
 
   try {
     const res = await fetch('https://qwen-proxy-indol.vercel.app/api/proxy', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'qwen-plus', max_tokens: 4096, messages: [{role:'user',content:prompt}] })
+      body: JSON.stringify({ model: 'qwen-turbo', max_tokens: 4096, messages: [{role:'user',content:prompt}] })
     });
     if (ipDone) return;
     if (!res.ok) { showIPError('网络错误 HTTP ' + res.status); return; }
