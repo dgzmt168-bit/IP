@@ -602,27 +602,39 @@ async function generate() {
 
 铁律：结合用户真实回答，不套模板。话题标题合规：无疗效承诺、无极限词、无医疗用语、不指向特定产品。`;
 
+  const loadingEl = document.getElementById('loading-screen');
+
+  // 强制超时（直接操作 DOM，不依赖 Promise 机制，iOS Safari 兼容）
+  let ipDone = false;
+  function showIPError(msg) {
+    if (ipDone) return;
+    ipDone = true;
+    loadingEl.innerHTML = `
+      <div style="color:#c00;font-size:14px;margin-bottom:12px;">❌ 生成遇到问题</div>
+      <div style="font-size:12px;color:#888;background:#f5f5f5;padding:10px;border-radius:6px;margin-bottom:16px;word-break:break-all;text-align:left;">${msg}</div>
+      <button onclick="restart()" style="padding:10px 20px;border:1px solid #ccc;background:none;cursor:pointer;border-radius:8px;font-family:inherit;">重新开始</button>`;
+  }
+  const ipTimeoutId = setTimeout(() => showIPError('请求超时（60秒），请点击重新开始再试'), 60000);
+
   try {
     const res = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer sk-06f7d3c132324784909a7b81efc915dd'
-      },
-      body: JSON.stringify({
-        model: 'qwen-plus',
-        max_tokens: 3000,
-        messages: [{role:'user',content:prompt}]
-      })
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer sk-06f7d3c132324784909a7b81efc915dd' },
+      body: JSON.stringify({ model: 'qwen-plus', max_tokens: 3000, messages: [{role:'user',content:prompt}] })
     });
-    if (!res.ok) throw new Error(`网络错误 HTTP ${res.status}`);
+    if (ipDone) return;
+    if (!res.ok) { showIPError('网络错误 HTTP ' + res.status); return; }
     const data = await res.json();
-    if (data.error) throw new Error('API错误: ' + JSON.stringify(data.error));
+    if (ipDone) return;
+    if (data.error) { showIPError('API错误: ' + JSON.stringify(data.error)); return; }
     const text = data.choices?.[0]?.message?.content || '';
-    if (!text.trim()) throw new Error('模型返回内容为空');
+    if (!text.trim()) { showIPError('模型返回内容为空'); return; }
     const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('无JSON，模型返回: ' + text.slice(0,200));
+    if (!jsonMatch) { showIPError('格式错误，请重试'); return; }
     const result = JSON.parse(jsonMatch[0]);
+    if (ipDone) return;
+    ipDone = true;
+    clearTimeout(ipTimeoutId);
 
     document.getElementById('loading-screen').style.display = 'none';
     document.getElementById('result-screen').style.display = 'block';
@@ -634,27 +646,21 @@ async function generate() {
       ? result.firstVideo
       : Object.entries(result.firstVideo).map(([k,v])=>`${k}：${v}`).join('\n');
     document.getElementById('out-topics').textContent = Array.isArray(result.topics)
-      ? result.topics.map((t,i)=> typeof t === 'string' ? t : `话题${i+1}：【${t.title||t.标题||''}】— ${t.reason||t.reason||t['为什么']||''}`).join('\n')
+      ? result.topics.map((t,i)=> typeof t === 'string' ? t : `话题${i+1}：【${t.title||t.标题||''}】`).join('\n')
       : result.topics;
 
     const tagsEl = document.getElementById('out-tags');
     tagsEl.innerHTML = '';
-    result.tags.forEach(t => {
+    (result.tags || []).forEach(t => {
       const s = document.createElement('span');
       s.className = 'result-tag';
       s.textContent = t;
       tagsEl.appendChild(s);
     });
 
-    try {
-      localStorage.setItem('ip_profile', JSON.stringify({ answers: {...answers}, result }));
-    } catch(e) {}
+    try { localStorage.setItem('ip_profile', JSON.stringify({ answers: {...answers}, result })); } catch(e) {}
   } catch(e) {
-    document.getElementById('loading-screen').innerHTML = `
-      <div style="color:var(--accent);font-size:14px;margin-bottom:12px;">生成遇到问题</div>
-      <div style="font-size:11px;color:#888;background:#f5f5f5;padding:10px;border-radius:6px;margin-bottom:16px;word-break:break-all;text-align:left;">${e.message || String(e)}</div>
-      <button onclick="restart()" style="padding:10px 20px;border:1px solid #ccc;background:none;cursor:pointer;border-radius:8px;font-family:inherit;">重新开始</button>
-    `;
+    showIPError(e.message || String(e));
   }
 }
 

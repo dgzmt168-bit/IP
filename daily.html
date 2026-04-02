@@ -403,10 +403,10 @@ async function fetchNews() {
   const btn     = document.getElementById('btn-refresh');
   const content = document.getElementById('news-content');
   btn.disabled  = true;
-  content.innerHTML = skeletons(5);
+  content.innerHTML = skeletons(3);
 
-  // 倒计时显示（与超时同步）
-  let countdown = 45;
+  // 倒计时
+  let countdown = 40;
   btn.textContent = `AI 思考中 ${countdown}s`;
   const countdownTimer = setInterval(() => {
     countdown--;
@@ -414,95 +414,76 @@ async function fetchNews() {
     else btn.textContent = '即将完成…';
   }, 1000);
 
-  // 后台触发热榜预取，完全不等待结果
+  // ★ 关键：直接用 setTimeout 操作 DOM，不依赖 Promise/async 机制
+  // iOS Safari 上 Promise.race/AbortController 可能失效，但 setTimeout 回调一定执行
+  let finished = false;
+  function showError(msg) {
+    if (finished) return;
+    finished = true;
+    clearInterval(countdownTimer);
+    content.innerHTML = `
+      <div style="padding:16px;background:#fff3f3;border:1px solid #fcc;border-radius:12px;color:#c00;margin-bottom:12px;">
+        <div style="font-weight:600;margin-bottom:8px;">❌ 话题获取失败</div>
+        <div style="font-size:13px;color:#555;word-break:break-all;">${msg}</div>
+      </div>
+      <button onclick="fetchNews()" style="padding:10px 24px;background:#c4621a;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;">重试</button>`;
+    btn.disabled = false;
+    btn.textContent = '换一批';
+  }
+  const forceTimeoutId = setTimeout(() => showError('请求超时（40秒），请检查网络后点重试'), 40000);
+
+  // 后台触发热榜预取
   prefetchTrending();
 
-  // 直接用缓存（如果已有），否则不传热榜词，不影响速度
   const trendingBlock = lastTrendingKeywords
-    ? `\n\n【当前微博实时热榜关键词（参考使用，结合健康话题借势）】\n${lastTrendingKeywords.join(' / ')}`
+    ? `\n参考热榜词（借势用）：${lastTrendingKeywords.slice(0,10).join('、')}`
     : '';
 
   const sectionSub = document.querySelector('#news-section .section-sub');
-  if (sectionSub && !lastTrendingKeywords) {
-    sectionSub.textContent = '根据你的 IP 智能推荐';
-  }
+  if (sectionSub && !lastTrendingKeywords) sectionSub.textContent = '根据你的 IP 智能推荐';
 
-  const today = new Date().toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
+  const today = new Date().toLocaleDateString('zh-CN', { month:'long', day:'numeric', weekday:'long' });
 
-  const prompt = `你是微信视频号健康类内容策略师。
+  const prompt = `你是微信视频号健康类内容策略师。今天${today}。
+创作者：${getIPSummary()}${trendingBlock}
 
-今天：${today}
-创作者：${getIPSummary()}
-${trendingBlock}
+推荐3个视频话题（情绪共鸣/反常识/实用干货各一），每个含：type_name、title（18字内）、why_hot（25字内）、audience（12字内）、angle（20字内）、outline（3条各12字内的数组）、hook_example（20字内不用大家好）。
 
-推荐3个适合她的视频话题（类型各异：情绪共鸣、反常识、实用干货各一），每个包含：
-- type_name: 话题类型
-- title: 吸引人的标题（18字内）
-- why_hot: 热度原因（30字内）
-- audience: 目标人群（15字内）
-- angle: 创作者切入角度（25字内）
-- outline: 3个拍摄点（每条15字内）
-- hook_example: 开场白（25字内，不用"大家好"）
+纯JSON，不加任何说明文字：{"topics":[{"type":"A","type_name":"","title":"","why_hot":"","audience":"","angle":"","outline":["","",""],"hook_example":""}]}`;
 
-合规：无疗效承诺，无极限词。
-
-纯JSON输出：
-{
-  "topics": [
-    {
-      "type": "A",
-      "type_name": "情绪共鸣型",
-      "title": "视频标题",
-      "why_hot": "热度背景说明",
-      "audience": "目标人群",
-      "angle": "创作者切入角度",
-      "outline": ["第一段讲什么", "第二段讲什么", "第三段讲什么"],
-      "hook_example": "开场第一句话"
-    }
-  ]
-}`;
-
-  const controller = new AbortController();
-  const timeoutId  = setTimeout(() => controller.abort(), 45000);
   try {
-    const res  = await fetch(QWEN_URL, {
+    const res = await fetch(QWEN_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${QWEN_KEY}`
-      },
-      body: JSON.stringify({
-        model: QWEN_MODEL,
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 2000
-      }),
-      signal: controller.signal
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${QWEN_KEY}` },
+      body: JSON.stringify({ model: QWEN_MODEL, messages: [{ role:'user', content:prompt }], max_tokens: 1200 })
     });
-    clearTimeout(timeoutId);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data   = await res.json();
-    if (data.error) throw new Error(JSON.stringify(data.error));
-    const text   = data.choices?.[0]?.message?.content || '';
-    if (!text.trim()) throw new Error('模型返回内容为空');
+
+    if (finished) return; // 超时已处理，忽略
+    if (!res.ok) { showError('HTTP ' + res.status); return; }
+
+    const data = await res.json();
+    if (finished) return;
+
+    if (data.error) { showError('API错误: ' + JSON.stringify(data.error)); return; }
+    const text = data.choices?.[0]?.message?.content || '';
+    if (!text.trim()) { showError('模型返回内容为空'); return; }
+
     const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('返回格式错误（no json）');
+    if (!jsonMatch) { showError('格式错误，请重试'); return; }
+
     const result = JSON.parse(jsonMatch[0]);
-    newsTopics   = result.topics || [];
-    renderNews();
+    newsTopics = result.topics || [];
+
+    if (!finished) {
+      finished = true;
+      clearTimeout(forceTimeoutId);
+      clearInterval(countdownTimer);
+      btn.disabled = false;
+      btn.textContent = '换一批';
+      renderNews();
+    }
   } catch(e) {
-    const errMsg = e.name === 'AbortError' ? '请求超时（15秒），请检查网络或稍后重试' : (e.message || '未知错误');
-    content.innerHTML = `
-      <div class="error-box" style="padding:16px;background:#fff3f3;border:1px solid #fcc;border-radius:12px;color:#c00;margin-bottom:12px;">
-        <div style="font-weight:600;margin-bottom:6px;">❌ 话题获取失败</div>
-        <div style="font-size:13px;color:#666;font-family:monospace;word-break:break-all;">${errMsg}</div>
-      </div>
-      <button class="btn-retry" onclick="fetchNews()">重试</button>`;
-  } finally {
-    clearTimeout(timeoutId);
-    clearInterval(countdownTimer);
-    // 无论成功失败，按钮一定恢复
-    btn.disabled    = false;
-    btn.textContent = '换一批';
+    showError(e.message || '未知错误');
   }
 }
 
@@ -688,7 +669,7 @@ ${getIPDetails()}
 
 ━━━ 今日借势话题 ━━━
 话题：${topic.title}
-背景：${topic.summary}
+背景：${topic.why_hot || topic.summary || ''}
 建议切入角度：${topic.angle}
 
 ━━━ 创作者此刻的真实感受（文案的灵魂，必须自然融入） ━━━
@@ -754,35 +735,45 @@ ${feeling}
   "hook2": "第6段完整文字"
 }`;
 
-  try {
-    const res    = await fetch(QWEN_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${QWEN_KEY}`
-      },
-      body: JSON.stringify({
-        model: QWEN_MODEL,
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 2000
-      })
-    });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data   = await res.json();
-    if (data.error) throw new Error(JSON.stringify(data.error));
-    const text   = data.choices?.[0]?.message?.content || '';
-    if (!text.trim()) throw new Error('模型返回内容为空');
-    const jsonMatch2 = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch2) throw new Error('no json: ' + text.slice(0, 100));
-    currentScript = JSON.parse(jsonMatch2[0]);
-    renderScript(currentScript);
-  } catch(e) {
-    document.getElementById('script-content').innerHTML = `
-      <div class="error-box" style="padding:16px;background:#fff3f3;border:1px solid #fcc;border-radius:12px;color:#c00;margin-bottom:12px;">
+  const scriptEl = document.getElementById('script-content');
+
+  // 强制超时（同样不依赖 Promise 机制）
+  let scriptDone = false;
+  function showScriptError(msg) {
+    if (scriptDone) return;
+    scriptDone = true;
+    scriptEl.innerHTML = `
+      <div style="padding:16px;background:#fff3f3;border:1px solid #fcc;border-radius:12px;color:#c00;margin-bottom:12px;">
         <div style="font-weight:600;margin-bottom:6px;">❌ 生成遇到问题</div>
-        <div style="font-size:13px;color:#666;font-family:monospace;word-break:break-all;">${e.message || '未知错误'}</div>
+        <div style="font-size:13px;color:#666;word-break:break-all;">${msg}</div>
       </div>
       <button class="btn-retry" onclick="retryScript()">← 返回重试</button>`;
+  }
+  const scriptTimeoutId = setTimeout(() => showScriptError('请求超时，请返回重试'), 50000);
+
+  try {
+    const res = await fetch(QWEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${QWEN_KEY}` },
+      body: JSON.stringify({ model: QWEN_MODEL, messages: [{ role:'user', content:prompt }], max_tokens: 2000 })
+    });
+    if (scriptDone) return;
+    if (!res.ok) { showScriptError('HTTP ' + res.status); return; }
+    const data = await res.json();
+    if (scriptDone) return;
+    if (data.error) { showScriptError('API错误: ' + JSON.stringify(data.error)); return; }
+    const text = data.choices?.[0]?.message?.content || '';
+    if (!text.trim()) { showScriptError('模型返回内容为空'); return; }
+    const jsonMatch2 = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch2) { showScriptError('格式错误，请重试'); return; }
+    currentScript = JSON.parse(jsonMatch2[0]);
+    if (!scriptDone) {
+      scriptDone = true;
+      clearTimeout(scriptTimeoutId);
+      renderScript(currentScript);
+    }
+  } catch(e) {
+    showScriptError(e.message || '未知错误');
   }
 }
 
