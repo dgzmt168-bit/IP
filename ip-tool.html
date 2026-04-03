@@ -427,7 +427,9 @@
 </div><!-- end .main -->
 </div><!-- end #questionnaire-wrap -->
 
+<script src="config.js"></script>
 <script>
+const QWEN_PROXY_URL = (typeof window !== 'undefined' && window.__QWEN_PROXY_URL__) || 'https://nutrition-api-xfwnyqpxkc.cn-hangzhou.fcapp.run';
 const answers = {};
 const TOTAL = 9;
 let currentQ = 1;
@@ -621,7 +623,7 @@ function generate() {
     var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
     var abortTimer = ctrl ? setTimeout(function() { ctrl.abort(); }, 55000) : null;
 
-    fetch('https://qwen-proxy-indol.vercel.app/api/proxy', {
+    fetch(QWEN_PROXY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: fetchBody,
