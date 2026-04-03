@@ -441,61 +441,44 @@ function fetchNews() {
 
   const prompt = '你是微信视频号健康类内容策略师。今天' + today + '。\n创作者：' + getIPSummary() + trendingBlock + '\n\n推荐2个视频话题（情绪共鸣、实用干货各一），每个含：type_name、title（15字内）、why_hot（20字内）、audience（10字内）、angle（15字内）、outline（3条各10字内的数组）、hook_example（15字内不用大家好）。\n\n纯JSON，不加任何说明文字：{"topics":[{"type":"A","type_name":"","title":"","why_hot":"","audience":"","angle":"","outline":["","",""],"hook_example":""}]}';
 
-  // 用 .then() 链，iOS Safari 更可靠；瞬间网络错误自动重试
-  var retryCount = 0;
-  var maxRetries = 2;
+  // 诊断模式：不重试，直接显示真实错误
   var fetchBody = JSON.stringify({ model: QWEN_MODEL, messages: [{ role:'user', content:prompt }], max_tokens: 500 });
+  var fetchStart = Date.now();
 
-  function doFetch() {
-    var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
-    var abortTimer = ctrl ? setTimeout(function() { ctrl.abort(); }, 55000) : null;
-
-    fetch(QWEN_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: fetchBody,
-      signal: ctrl ? ctrl.signal : undefined
-    })
-    .then(function(res) {
-      if (abortTimer) clearTimeout(abortTimer);
-      if (finished) return null;
-      if (!res.ok) { showError('HTTP ' + res.status); return null; }
-      return res.json();
-    })
-    .then(function(data) {
-      if (!data || finished) return;
-      if (data.error) { showError('API错误: ' + JSON.stringify(data.error)); return; }
-      if (data.code && !data.choices) { showError('错误 ' + data.code + ': ' + (data.message || '')); return; }
-      var text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content)
-        || (data.content && data.content[0] && data.content[0].text) || '';
-      if (!text.trim()) { showError('返回内容为空: ' + JSON.stringify(data).slice(0, 200)); return; }
-      var jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) { showError('格式错误，请重试'); return; }
-      var result = JSON.parse(jsonMatch[0]);
-      newsTopics = result.topics || [];
-      if (!finished) {
-        finished = true;
-        clearTimeout(forceTimeoutId);
-        clearInterval(countdownTimer);
-        btn.disabled = false;
-        btn.textContent = '换一批';
-        renderNews();
-      }
-    })
-    .catch(function(e) {
-      if (abortTimer) clearTimeout(abortTimer);
-      if (finished) return;
-      var isAbort = (e.name === 'AbortError');
-      if (!isAbort && retryCount < maxRetries) {
-        retryCount++;
-        setTimeout(doFetch, 2000);
-      } else {
-        showError(isAbort ? '响应超时，请点重试' : (e.message || '网络错误'));
-      }
-    });
-  }
-
-  doFetch();
+  fetch(QWEN_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: fetchBody
+  })
+  .then(function(res) {
+    if (finished) return null;
+    if (!res.ok) { showError('HTTP ' + res.status + ' (' + Math.round((Date.now()-fetchStart)/1000) + 's)'); return null; }
+    return res.json();
+  })
+  .then(function(data) {
+    if (!data || finished) return;
+    if (data.error) { showError('API错误: ' + JSON.stringify(data.error)); return; }
+    if (data.code && !data.choices) { showError('DashScope: ' + data.code + ' ' + (data.message||'')); return; }
+    var text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content)
+      || (data.content && data.content[0] && data.content[0].text) || '';
+    if (!text.trim()) { showError('内容为空: ' + JSON.stringify(data).slice(0,200)); return; }
+    var jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) { showError('格式错误: ' + text.slice(0,100)); return; }
+    var result = JSON.parse(jsonMatch[0]);
+    newsTopics = result.topics || [];
+    if (!finished) {
+      finished = true;
+      clearTimeout(forceTimeoutId);
+      clearInterval(countdownTimer);
+      btn.disabled = false;
+      btn.textContent = '换一批';
+      renderNews();
+    }
+  })
+  .catch(function(e) {
+    if (finished) return;
+    showError('网络错误(' + Math.round((Date.now()-fetchStart)/1000) + 's): ' + (e.name||'') + ' ' + (e.message||''));
+  });
 }
 
 function skeletons(n) {
