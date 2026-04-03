@@ -467,7 +467,7 @@ async function fetchNews() {
 
     if (data.error) { showError('API错误: ' + JSON.stringify(data.error)); return; }
     if (data.code && !data.choices) { showError('DashScope错误 ' + data.code + ': ' + (data.message || '')); return; }
-    const text = data.choices?.[0]?.message?.content || '';
+    const text = data.choices?.[0]?.message?.content || data.content?.[0]?.text || '';
     if (!text.trim()) { showError('返回内容为空: ' + JSON.stringify(data).slice(0, 200)); return; }
 
     const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -767,7 +767,7 @@ ${feeling}
     if (scriptDone) return;
     if (data.error) { showScriptError('API错误: ' + JSON.stringify(data.error)); return; }
     if (data.code && !data.choices) { showScriptError('DashScope错误 ' + data.code + ': ' + (data.message || '')); return; }
-    const text = data.choices?.[0]?.message?.content || '';
+    const text = data.choices?.[0]?.message?.content || data.content?.[0]?.text || '';
     if (!text.trim()) { showScriptError('返回内容为空: ' + JSON.stringify(data).slice(0, 200)); return; }
     const jsonMatch2 = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch2) { showScriptError('格式错误，请重试'); return; }
