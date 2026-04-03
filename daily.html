@@ -427,8 +427,8 @@ function fetchNews() {
   // 保底超时 65 秒
   const forceTimeoutId = setTimeout(function() { showError('超时(65s) | 地址:' + QWEN_URL); }, 65000);
 
-  // 后台触发热榜预取
-  prefetchTrending();
+  // 后台触发热榜预取（暂时关闭诊断）
+  // prefetchTrending();
 
   const trendingBlock = lastTrendingKeywords
     ? '\n参考热榜词（借势用）：' + lastTrendingKeywords.slice(0,10).join('、')
