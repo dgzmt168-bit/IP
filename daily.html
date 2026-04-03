@@ -442,30 +442,26 @@ function fetchNews() {
   // 【诊断】极简固定prompt，绕开IP数据，测试FC能否响应
   const prompt = '推荐1个健康类视频话题，纯JSON：{"topics":[{"type":"A","type_name":"干货","title":"测试话题","why_hot":"测试","audience":"测试","angle":"测试","outline":["a","b","c"],"hook_example":"测试"}]}';
 
-  // 诊断模式：不重试，直接显示真实错误
+  // 用 XMLHttpRequest 代替 fetch，iOS Safari 兼容性更好
   var fetchBody = JSON.stringify({ model: QWEN_MODEL, messages: [{ role:'user', content:prompt }], max_tokens: 500 });
-  var fetchStart = Date.now();
-
-  fetch(QWEN_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: fetchBody
-  })
-  .then(function(res) {
-    if (finished) return null;
-    if (!res.ok) { showError('HTTP ' + res.status + ' (' + Math.round((Date.now()-fetchStart)/1000) + 's)'); return null; }
-    return res.json();
-  })
-  .then(function(data) {
-    if (!data || finished) return;
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', QWEN_URL, true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.timeout = 58000;
+  xhr.onload = function() {
+    if (finished) return;
+    if (xhr.status < 200 || xhr.status >= 300) { showError('HTTP ' + xhr.status); return; }
+    var data;
+    try { data = JSON.parse(xhr.responseText); } catch(e) { showError('JSON解析失败: ' + xhr.responseText.slice(0,100)); return; }
     if (data.error) { showError('API错误: ' + JSON.stringify(data.error)); return; }
     if (data.code && !data.choices) { showError('DashScope: ' + data.code + ' ' + (data.message||'')); return; }
     var text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content)
       || (data.content && data.content[0] && data.content[0].text) || '';
-    if (!text.trim()) { showError('内容为空: ' + JSON.stringify(data).slice(0,200)); return; }
+    if (!text.trim()) { showError('内容为空: ' + xhr.responseText.slice(0,200)); return; }
     var jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) { showError('格式错误: ' + text.slice(0,100)); return; }
-    var result = JSON.parse(jsonMatch[0]);
+    var result;
+    try { result = JSON.parse(jsonMatch[0]); } catch(e) { showError('结果解析失败'); return; }
     newsTopics = result.topics || [];
     if (!finished) {
       finished = true;
@@ -475,11 +471,10 @@ function fetchNews() {
       btn.textContent = '换一批';
       renderNews();
     }
-  })
-  .catch(function(e) {
-    if (finished) return;
-    showError('网络错误(' + Math.round((Date.now()-fetchStart)/1000) + 's): ' + (e.name||'') + ' ' + (e.message||''));
-  });
+  };
+  xhr.onerror = function() { if (!finished) showError('XHR网络错误'); };
+  xhr.ontimeout = function() { if (!finished) showError('XHR超时(58s)'); };
+  xhr.send(fetchBody);
 }
 
 function skeletons(n) {
