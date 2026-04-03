@@ -424,10 +424,9 @@ function fetchNews() {
     btn.textContent = '换一批';
   }
   // 保底超时 65 秒
-  const forceTimeoutId = setTimeout(function() { showError('超时(65s) | 地址:' + QWEN_URL); }, 65000);
+  const forceTimeoutId = setTimeout(function() { showError('请求超时，请点重试'); }, 65000);
 
-  // 后台触发热榜预取（暂时关闭诊断）
-  // prefetchTrending();
+  prefetchTrending();
 
   const trendingBlock = lastTrendingKeywords
     ? '\n参考热榜词（借势用）：' + lastTrendingKeywords.slice(0,10).join('、')
@@ -438,29 +437,27 @@ function fetchNews() {
 
   const today = new Date().toLocaleDateString('zh-CN', { month:'long', day:'numeric', weekday:'long' });
 
-  // 【诊断】极简固定prompt，绕开IP数据，测试FC能否响应
-  const prompt = '推荐1个健康类视频话题，纯JSON：{"topics":[{"type":"A","type_name":"干货","title":"测试话题","why_hot":"测试","audience":"测试","angle":"测试","outline":["a","b","c"],"hook_example":"测试"}]}';
+  const prompt = '你是微信视频号健康类内容策略师。今天' + today + '。\n创作者：' + getIPSummary() + trendingBlock + '\n\n推荐2个视频话题（情绪共鸣、实用干货各一），每个含：type_name、title（15字内）、why_hot（20字内）、audience（10字内）、angle（15字内）、outline（3条各10字内的数组）、hook_example（15字内不用大家好）。\n\n纯JSON，不加任何说明文字：{"topics":[{"type":"A","type_name":"","title":"","why_hot":"","audience":"","angle":"","outline":["","",""],"hook_example":""}]}';
 
-  // 用 XMLHttpRequest 代替 fetch，iOS Safari 兼容性更好
-  var fetchBody = JSON.stringify({ model: QWEN_MODEL, messages: [{ role:'user', content:prompt }], max_tokens: 500 });
+  var fetchBody = JSON.stringify({ model: QWEN_MODEL, messages: [{ role:'user', content:prompt }], max_tokens: 800 });
   var xhr = new XMLHttpRequest();
   xhr.open('POST', QWEN_URL, true);
   xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 58000;
+  xhr.timeout = 60000;
   xhr.onload = function() {
     if (finished) return;
     if (xhr.status < 200 || xhr.status >= 300) { showError('HTTP ' + xhr.status); return; }
     var data;
-    try { data = JSON.parse(xhr.responseText); } catch(e) { showError('JSON解析失败: ' + xhr.responseText.slice(0,100)); return; }
+    try { data = JSON.parse(xhr.responseText); } catch(e) { showError('格式错误，请重试'); return; }
     if (data.error) { showError('API错误: ' + JSON.stringify(data.error)); return; }
-    if (data.code && !data.choices) { showError('DashScope: ' + data.code + ' ' + (data.message||'')); return; }
+    if (data.code && !data.choices) { showError('错误: ' + data.code); return; }
     var text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content)
       || (data.content && data.content[0] && data.content[0].text) || '';
-    if (!text.trim()) { showError('内容为空: ' + xhr.responseText.slice(0,200)); return; }
+    if (!text.trim()) { showError('返回内容为空，请重试'); return; }
     var jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) { showError('格式错误: ' + text.slice(0,100)); return; }
+    if (!jsonMatch) { showError('格式错误，请重试'); return; }
     var result;
-    try { result = JSON.parse(jsonMatch[0]); } catch(e) { showError('结果解析失败'); return; }
+    try { result = JSON.parse(jsonMatch[0]); } catch(e) { showError('格式错误，请重试'); return; }
     newsTopics = result.topics || [];
     if (!finished) {
       finished = true;
@@ -471,8 +468,8 @@ function fetchNews() {
       renderNews();
     }
   };
-  xhr.onerror = function() { if (!finished) showError('XHR网络错误'); };
-  xhr.ontimeout = function() { if (!finished) showError('XHR超时(58s)'); };
+  xhr.onerror = function() { if (!finished) showError('网络错误，请重试'); };
+  xhr.ontimeout = function() { if (!finished) showError('请求超时，请点重试'); };
   xhr.send(fetchBody);
 }
 
