@@ -605,24 +605,32 @@ function generate() {
       <div style="font-size:12px;color:#888;background:#f5f5f5;padding:10px;border-radius:6px;margin-bottom:16px;word-break:break-all;text-align:left;">${msg}</div>
       <button onclick="restart()" style="padding:10px 20px;border:1px solid #ccc;background:none;cursor:pointer;border-radius:8px;font-family:inherit;">重新开始</button>`;
   }
-  const ipTimeoutId = setTimeout(() => showIPError('请求超时（90秒），请点击重新开始再试'), 90000);
+  // 最终保底超时 65 秒（Vercel 最长 60s，留 5s 缓冲）
+  const ipTimeoutId = setTimeout(function() { showIPError('服务器响应超时，请重新开始再试'); }, 65000);
 
   // 用 .then() 链代替 async/await，iOS Safari 对 .then() 支持更可靠
-  // 网络抖动时自动重试最多 2 次
+  // "Load failed" 等瞬间网络错误 → 自动重试最多 2 次
+  // AbortError（55s 挂起）→ 直接报错，不重试
   let retryCount = 0;
   const maxRetries = 2;
   const subMsg = document.getElementById('loading-sub-msg');
   const fetchBody = JSON.stringify({ model: 'qwen-turbo', max_tokens: 1800, messages: [{role:'user',content:prompt}] });
 
   function doFetch() {
+    // 给每次 fetch 单独加 55s AbortController，防止请求无限挂起
+    var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    var abortTimer = ctrl ? setTimeout(function() { ctrl.abort(); }, 55000) : null;
+
     fetch('https://qwen-proxy-indol.vercel.app/api/proxy', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: fetchBody
+      body: fetchBody,
+      signal: ctrl ? ctrl.signal : undefined
     })
     .then(function(res) {
+      if (abortTimer) clearTimeout(abortTimer);
       if (ipDone) return null;
-      if (!res.ok) { showIPError('网络错误 HTTP ' + res.status); return null; }
+      if (!res.ok) { showIPError('服务器错误 HTTP ' + res.status + '，请重新开始再试'); return null; }
       return res.json();
     })
     .then(function(data) {
@@ -662,13 +670,16 @@ function generate() {
       try { localStorage.setItem('ip_profile', JSON.stringify({ answers: Object.assign({}, answers), result: result })); } catch(e2) {}
     })
     .catch(function(e) {
+      if (abortTimer) clearTimeout(abortTimer);
       if (ipDone) return;
-      if (retryCount < maxRetries) {
+      var isAbort = (e.name === 'AbortError');
+      // 超时（AbortError）不重试；瞬间网络错误才重试
+      if (!isAbort && retryCount < maxRetries) {
         retryCount++;
         if (subMsg) subMsg.textContent = '网络波动，正在重试（' + retryCount + '/' + maxRetries + '）…';
         setTimeout(doFetch, 2000);
       } else {
-        showIPError(e.message || String(e));
+        showIPError(isAbort ? '响应超时，请重新开始再试' : (e.message || String(e)));
       }
     });
   }
