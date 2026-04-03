@@ -425,7 +425,7 @@ function fetchNews() {
     btn.textContent = '换一批';
   }
   // 保底超时 65 秒
-  const forceTimeoutId = setTimeout(function() { showError('请求超时，请点重试'); }, 65000);
+  const forceTimeoutId = setTimeout(function() { showError('超时(65s) | 地址:' + QWEN_URL); }, 65000);
 
   // 后台触发热榜预取
   prefetchTrending();
