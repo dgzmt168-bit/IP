@@ -195,7 +195,7 @@
       </div>
       <button class="btn-refresh" id="btn-refresh" onclick="fetchNews()">换一批</button>
     </div>
-    <div class="news-grid" id="news-content"></div>
+    <div class="news-grid" id="news-content"><div style="color:#aaa;font-size:13px;padding:16px 0;">点击右上角「换一批」获取今日话题</div></div>
   </div>
 
   <!-- 感受输入 -->
@@ -277,7 +277,7 @@ const SCRIPT_SECTIONS = [
     `${now.getMonth()+1} 月 ${now.getDate()} 日  星期${wd[now.getDay()]}`;
 
   loadIPSection();
-  fetchNews();
+  // fetchNews() 不再自动执行，避免挂起 XHR 干扰后续点击
   initSpeech();
 })();
 
