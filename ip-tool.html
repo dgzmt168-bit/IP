@@ -638,8 +638,10 @@ function generate() {
     .then(function(data) {
       if (!data || ipDone) return;
       if (data.error) { showIPError('API错误: ' + JSON.stringify(data.error)); return; }
+      // DashScope 鉴权失败时返回 {code, message} 而非 OpenAI 格式
+      if (data.code && !data.choices) { showIPError('DashScope错误 ' + data.code + ': ' + (data.message || '')); return; }
       const text = data.choices?.[0]?.message?.content || '';
-      if (!text.trim()) { showIPError('模型返回内容为空'); return; }
+      if (!text.trim()) { showIPError('返回内容为空，原始数据: ' + JSON.stringify(data).slice(0, 200)); return; }
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) { showIPError('格式错误，请重试'); return; }
       const result = JSON.parse(jsonMatch[0]);
