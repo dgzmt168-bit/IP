@@ -437,9 +437,9 @@ function fetchNews() {
 
   const today = new Date().toLocaleDateString('zh-CN', { month:'long', day:'numeric', weekday:'long' });
 
-  const prompt = '你是微信视频号健康类内容策略师。今天' + today + '。\n创作者：' + getIPSummary() + trendingBlock + '\n\n推荐2个视频话题（情绪共鸣、实用干货各一），每个含：type_name、title（15字内）、why_hot（20字内）、audience（10字内）、angle（15字内）、outline（3条各10字内的数组）、hook_example（15字内不用大家好）。\n\n纯JSON，不加任何说明文字：{"topics":[{"type":"A","type_name":"","title":"","why_hot":"","audience":"","angle":"","outline":["","",""],"hook_example":""}]}';
+  const prompt = '你是微信视频号健康类内容策略师。今天' + today + '。\n创作者：' + getIPSummary() + trendingBlock + '\n\n推荐3个视频话题（情绪共鸣1个、实用干货1个、热点借势1个），每个含：type_name、title（15字内）、why_hot（20字内）、audience（10字内）、angle（15字内）、outline（3条各10字内的数组）、hook_example（15字内不用大家好）。\n\n纯JSON，不加任何说明文字：{"topics":[{"type":"A","type_name":"","title":"","why_hot":"","audience":"","angle":"","outline":["","",""],"hook_example":""}]}';
 
-  var fetchBody = JSON.stringify({ model: QWEN_MODEL, messages: [{ role:'user', content:prompt }], max_tokens: 800 });
+  var fetchBody = JSON.stringify({ model: QWEN_MODEL, messages: [{ role:'user', content:prompt }], max_tokens: 1200 });
   var xhr = new XMLHttpRequest();
   xhr.open('POST', QWEN_URL, true);
   xhr.setRequestHeader('Content-Type', 'application/json');
