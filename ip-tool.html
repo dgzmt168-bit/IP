@@ -381,7 +381,7 @@
   <div id="loading-screen">
     <div class="spinner"></div>
     <div class="loading-text">正在为你梳理 IP 定位…</div>
-    <div class="loading-sub">基于你的真实回答生成，请稍候</div>
+    <div class="loading-sub" id="loading-sub-msg">基于你的真实回答生成，请稍候</div>
   </div>
 
   <!-- 结果 -->
@@ -566,7 +566,7 @@ function backToTransition() {
 }
 
 // 生成
-async function generate() {
+function generate() {
   document.getElementById('q9').classList.remove('active');
   document.getElementById('loading-screen').style.display = 'block';
   document.getElementById('progress').style.width = '100%';
@@ -607,52 +607,73 @@ async function generate() {
   }
   const ipTimeoutId = setTimeout(() => showIPError('请求超时（90秒），请点击重新开始再试'), 90000);
 
-  try {
-    const res = await fetch('https://qwen-proxy-indol.vercel.app/api/proxy', {
+  // 用 .then() 链代替 async/await，iOS Safari 对 .then() 支持更可靠
+  // 网络抖动时自动重试最多 2 次
+  let retryCount = 0;
+  const maxRetries = 2;
+  const subMsg = document.getElementById('loading-sub-msg');
+  const fetchBody = JSON.stringify({ model: 'qwen-turbo', max_tokens: 1800, messages: [{role:'user',content:prompt}] });
+
+  function doFetch() {
+    fetch('https://qwen-proxy-indol.vercel.app/api/proxy', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'qwen-turbo', max_tokens: 1800, messages: [{role:'user',content:prompt}] })
+      body: fetchBody
+    })
+    .then(function(res) {
+      if (ipDone) return null;
+      if (!res.ok) { showIPError('网络错误 HTTP ' + res.status); return null; }
+      return res.json();
+    })
+    .then(function(data) {
+      if (!data || ipDone) return;
+      if (data.error) { showIPError('API错误: ' + JSON.stringify(data.error)); return; }
+      const text = data.choices?.[0]?.message?.content || '';
+      if (!text.trim()) { showIPError('模型返回内容为空'); return; }
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) { showIPError('格式错误，请重试'); return; }
+      const result = JSON.parse(jsonMatch[0]);
+      if (ipDone) return;
+      ipDone = true;
+      clearTimeout(ipTimeoutId);
+
+      document.getElementById('loading-screen').style.display = 'none';
+      document.getElementById('result-screen').style.display = 'block';
+      document.getElementById('result-name').textContent = answers.name + ' 的商业 IP 档案';
+      document.getElementById('out-positioning').textContent = result.positioning;
+      document.getElementById('out-persona-type').textContent = result.persona_type || '';
+      document.getElementById('out-bio').textContent = result.bio;
+      document.getElementById('out-first-video').textContent = typeof result.firstVideo === 'string'
+        ? result.firstVideo
+        : Object.entries(result.firstVideo).map(function(e){return e[0]+'：'+e[1];}).join('\n');
+      document.getElementById('out-topics').textContent = Array.isArray(result.topics)
+        ? result.topics.map(function(t,i){ return typeof t === 'string' ? t : '话题'+(i+1)+'：【'+(t.title||t['标题']||'')+'】'; }).join('\n')
+        : result.topics;
+
+      const tagsEl = document.getElementById('out-tags');
+      tagsEl.innerHTML = '';
+      (result.tags || []).forEach(function(t) {
+        const s = document.createElement('span');
+        s.className = 'result-tag';
+        s.textContent = t;
+        tagsEl.appendChild(s);
+      });
+
+      try { localStorage.setItem('ip_profile', JSON.stringify({ answers: Object.assign({}, answers), result: result })); } catch(e2) {}
+    })
+    .catch(function(e) {
+      if (ipDone) return;
+      if (retryCount < maxRetries) {
+        retryCount++;
+        if (subMsg) subMsg.textContent = '网络波动，正在重试（' + retryCount + '/' + maxRetries + '）…';
+        setTimeout(doFetch, 2000);
+      } else {
+        showIPError(e.message || String(e));
+      }
     });
-    if (ipDone) return;
-    if (!res.ok) { showIPError('网络错误 HTTP ' + res.status); return; }
-    const data = await res.json();
-    if (ipDone) return;
-    if (data.error) { showIPError('API错误: ' + JSON.stringify(data.error)); return; }
-    const text = data.choices?.[0]?.message?.content || '';
-    if (!text.trim()) { showIPError('模型返回内容为空'); return; }
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) { showIPError('格式错误，请重试'); return; }
-    const result = JSON.parse(jsonMatch[0]);
-    if (ipDone) return;
-    ipDone = true;
-    clearTimeout(ipTimeoutId);
-
-    document.getElementById('loading-screen').style.display = 'none';
-    document.getElementById('result-screen').style.display = 'block';
-    document.getElementById('result-name').textContent = `${answers.name} 的商业 IP 档案`;
-    document.getElementById('out-positioning').textContent = result.positioning;
-    document.getElementById('out-persona-type').textContent = result.persona_type || '';
-    document.getElementById('out-bio').textContent = result.bio;
-    document.getElementById('out-first-video').textContent = typeof result.firstVideo === 'string'
-      ? result.firstVideo
-      : Object.entries(result.firstVideo).map(([k,v])=>`${k}：${v}`).join('\n');
-    document.getElementById('out-topics').textContent = Array.isArray(result.topics)
-      ? result.topics.map((t,i)=> typeof t === 'string' ? t : `话题${i+1}：【${t.title||t.标题||''}】`).join('\n')
-      : result.topics;
-
-    const tagsEl = document.getElementById('out-tags');
-    tagsEl.innerHTML = '';
-    (result.tags || []).forEach(t => {
-      const s = document.createElement('span');
-      s.className = 'result-tag';
-      s.textContent = t;
-      tagsEl.appendChild(s);
-    });
-
-    try { localStorage.setItem('ip_profile', JSON.stringify({ answers: {...answers}, result })); } catch(e) {}
-  } catch(e) {
-    showIPError(e.message || String(e));
   }
+
+  doFetch();
 }
 
 function copyText(id, btn) {
