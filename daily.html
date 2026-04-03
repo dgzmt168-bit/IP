@@ -400,44 +400,38 @@ function prefetchTrending() {
   }).catch(() => {});
 }
 
-async function fetchNews() {
+function fetchNews() {
   const btn     = document.getElementById('btn-refresh');
   const content = document.getElementById('news-content');
   btn.disabled  = true;
   content.innerHTML = skeletons(2);
 
   // 倒计时
-  let countdown = 58;
-  btn.textContent = `AI 思考中 ${countdown}s`;
-  const countdownTimer = setInterval(() => {
+  let countdown = 62;
+  btn.textContent = 'AI 思考中 ' + countdown + 's';
+  const countdownTimer = setInterval(function() {
     countdown--;
-    if (countdown > 0) btn.textContent = `AI 思考中 ${countdown}s`;
+    if (countdown > 0) btn.textContent = 'AI 思考中 ' + countdown + 's';
     else btn.textContent = '即将完成…';
   }, 1000);
 
-  // ★ 关键：直接用 setTimeout 操作 DOM，不依赖 Promise/async 机制
-  // iOS Safari 上 Promise.race/AbortController 可能失效，但 setTimeout 回调一定执行
   let finished = false;
   function showError(msg) {
     if (finished) return;
     finished = true;
     clearInterval(countdownTimer);
-    content.innerHTML = `
-      <div style="padding:16px;background:#fff3f3;border:1px solid #fcc;border-radius:12px;color:#c00;margin-bottom:12px;">
-        <div style="font-weight:600;margin-bottom:8px;">❌ 话题获取失败</div>
-        <div style="font-size:13px;color:#555;word-break:break-all;">${msg}</div>
-      </div>
-      <button onclick="fetchNews()" style="padding:10px 24px;background:#c4621a;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;">重试</button>`;
+    content.innerHTML = '<div style="padding:16px;background:#fff3f3;border:1px solid #fcc;border-radius:12px;color:#c00;margin-bottom:12px;"><div style="font-weight:600;margin-bottom:8px;">❌ 话题获取失败</div><div style="font-size:13px;color:#555;word-break:break-all;">' + msg + '</div></div><button onclick="fetchNews()" style="padding:10px 24px;background:#c4621a;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;">重试</button>';
     btn.disabled = false;
     btn.textContent = '换一批';
   }
-  const forceTimeoutId = setTimeout(() => showError('请求超时（58秒），请点重试'), 58000);
+  // 保底超时 65 秒
+  const forceTimeoutId = setTimeout(function() { showError('请求超时，请点重试'); }, 65000);
 
   // 后台触发热榜预取
   prefetchTrending();
 
   const trendingBlock = lastTrendingKeywords
-    ? `\n参考热榜词（借势用）：${lastTrendingKeywords.slice(0,10).join('、')}`
+    ? '\n参考热榜词（借势用）：' + lastTrendingKeywords.slice(0,10).join('、')
     : '';
 
   const sectionSub = document.querySelector('#news-section .section-sub');
@@ -445,48 +439,63 @@ async function fetchNews() {
 
   const today = new Date().toLocaleDateString('zh-CN', { month:'long', day:'numeric', weekday:'long' });
 
-  const prompt = `你是微信视频号健康类内容策略师。今天${today}。
-创作者：${getIPSummary()}${trendingBlock}
+  const prompt = '你是微信视频号健康类内容策略师。今天' + today + '。\n创作者：' + getIPSummary() + trendingBlock + '\n\n推荐2个视频话题（情绪共鸣、实用干货各一），每个含：type_name、title（15字内）、why_hot（20字内）、audience（10字内）、angle（15字内）、outline（3条各10字内的数组）、hook_example（15字内不用大家好）。\n\n纯JSON，不加任何说明文字：{"topics":[{"type":"A","type_name":"","title":"","why_hot":"","audience":"","angle":"","outline":["","",""],"hook_example":""}]}';
 
-推荐2个视频话题（情绪共鸣、实用干货各一），每个含：type_name、title（15字内）、why_hot（20字内）、audience（10字内）、angle（15字内）、outline（3条各10字内的数组）、hook_example（15字内不用大家好）。
+  // 用 .then() 链，iOS Safari 更可靠；瞬间网络错误自动重试
+  var retryCount = 0;
+  var maxRetries = 2;
+  var fetchBody = JSON.stringify({ model: QWEN_MODEL, messages: [{ role:'user', content:prompt }], max_tokens: 800 });
 
-纯JSON，不加任何说明文字：{"topics":[{"type":"A","type_name":"","title":"","why_hot":"","audience":"","angle":"","outline":["","",""],"hook_example":""}]}`;
+  function doFetch() {
+    var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    var abortTimer = ctrl ? setTimeout(function() { ctrl.abort(); }, 55000) : null;
 
-  try {
-    const res = await fetch(QWEN_URL, {
+    fetch(QWEN_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: QWEN_MODEL, messages: [{ role:'user', content:prompt }], max_tokens: 800 })
+      body: fetchBody,
+      signal: ctrl ? ctrl.signal : undefined
+    })
+    .then(function(res) {
+      if (abortTimer) clearTimeout(abortTimer);
+      if (finished) return null;
+      if (!res.ok) { showError('HTTP ' + res.status); return null; }
+      return res.json();
+    })
+    .then(function(data) {
+      if (!data || finished) return;
+      if (data.error) { showError('API错误: ' + JSON.stringify(data.error)); return; }
+      if (data.code && !data.choices) { showError('错误 ' + data.code + ': ' + (data.message || '')); return; }
+      var text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content)
+        || (data.content && data.content[0] && data.content[0].text) || '';
+      if (!text.trim()) { showError('返回内容为空: ' + JSON.stringify(data).slice(0, 200)); return; }
+      var jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) { showError('格式错误，请重试'); return; }
+      var result = JSON.parse(jsonMatch[0]);
+      newsTopics = result.topics || [];
+      if (!finished) {
+        finished = true;
+        clearTimeout(forceTimeoutId);
+        clearInterval(countdownTimer);
+        btn.disabled = false;
+        btn.textContent = '换一批';
+        renderNews();
+      }
+    })
+    .catch(function(e) {
+      if (abortTimer) clearTimeout(abortTimer);
+      if (finished) return;
+      var isAbort = (e.name === 'AbortError');
+      if (!isAbort && retryCount < maxRetries) {
+        retryCount++;
+        setTimeout(doFetch, 2000);
+      } else {
+        showError(isAbort ? '响应超时，请点重试' : (e.message || '网络错误'));
+      }
     });
-
-    if (finished) return; // 超时已处理，忽略
-    if (!res.ok) { showError('HTTP ' + res.status); return; }
-
-    const data = await res.json();
-    if (finished) return;
-
-    if (data.error) { showError('API错误: ' + JSON.stringify(data.error)); return; }
-    if (data.code && !data.choices) { showError('DashScope错误 ' + data.code + ': ' + (data.message || '')); return; }
-    const text = data.choices?.[0]?.message?.content || data.content?.[0]?.text || '';
-    if (!text.trim()) { showError('返回内容为空: ' + JSON.stringify(data).slice(0, 200)); return; }
-
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) { showError('格式错误，请重试'); return; }
-
-    const result = JSON.parse(jsonMatch[0]);
-    newsTopics = result.topics || [];
-
-    if (!finished) {
-      finished = true;
-      clearTimeout(forceTimeoutId);
-      clearInterval(countdownTimer);
-      btn.disabled = false;
-      btn.textContent = '换一批';
-      renderNews();
-    }
-  } catch(e) {
-    showError(e.message || '未知错误');
   }
+
+  doFetch();
 }
 
 function skeletons(n) {
