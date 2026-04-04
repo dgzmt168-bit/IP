@@ -616,7 +616,7 @@ function generate() {
   let retryCount = 0;
   const maxRetries = 2;
   const subMsg = document.getElementById('loading-sub-msg');
-  const fetchBody = JSON.stringify({ model: 'qwen-turbo', max_tokens: 1800, messages: [{role:'user',content:prompt}] });
+  const fetchBody = JSON.stringify({ model: 'deepseek-chat', max_tokens: 1800, messages: [{role:'user',content:prompt}] });
 
   function doFetch() {
     // 给每次 fetch 单独加 55s AbortController，防止请求无限挂起
